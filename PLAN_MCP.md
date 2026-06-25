@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Interactive `claude --remote-control` only, never `-p`.** MCP spawns create the session **detached** (no terminal handoff in the daemon) — the user attaches later via the app or `cx go`.
-- **Stateless, thin daemon.** `StreamableHTTPServerTransport({ sessionIdGenerator: undefined })`. No background reconciliation, no per-session state. Tools call the same stateless functions.
+- **Application-stateless, thin daemon.** No background reconciliation; no *durable* state beyond the registry; disposable/restartable. (Implementation note / drift from initial sketch: a single shared stateless transport with `sessionIdGenerator: undefined` throws "cannot be reused across requests" on the MCP handshake, so the server uses `sessionIdGenerator: () => randomUUID()` — per-connection session bookkeeping that is lost on restart, which preserves the disposable property.) Tools call the same stateless functions.
 - **Idempotent `cx listen`.** Bind `127.0.0.1:<port>` (default `7591`, override `CX_PORT`); on `EADDRINUSE`, print "already listening" and exit 0.
 - **Non-invasive wiring.** `cx listen` writes a cx-scoped `~/.cx/mcp.json` (`{ mcpServers: { cx: { type: "http", url: "http://127.0.0.1:<port>/mcp" } } }`). cx-spawned sessions get `--mcp-config ~/.cx/mcp.json` when that file exists. We do NOT edit the user's global Claude config.
 - **SDK API (verified, v1.29.0):** `new McpServer({ name, version })`; `server.registerTool(name, { description, inputSchema: <rawZodShape> }, async (args) => ({ content: [{ type: 'text', text }] }))` (throw or `isError:true` on failure); `await server.connect(transport)`; `transport.handleRequest(req, res)` on `POST /mcp`.

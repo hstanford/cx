@@ -56,5 +56,5 @@ disposable — kill it and re-run `cx listen` anytime.
 
 ## Follow-ups
 
-See `DESIGN.md` for planned additions: a phone/Slack front-end and an
-agent-initiated MCP dispatch server (`cx listen`) — both over this same registry.
+See `DESIGN.md` for a planned phone/Slack front-end over this same registry.
+(The agent-initiated MCP dispatch server, `cx listen`, is built — see above.)
