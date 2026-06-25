@@ -26,14 +26,14 @@ describe('App', () => {
   it('lists existing streams by name', () => {
     cmdNew({ purpose: 'refresh triggers', dir: '/tmp', slug: 'trg', name: 'Triggers' }, deps);
     const { lastFrame } = render(
-      <App deps={deps} onAttach={() => {}} onCreate={() => {}} onExit={() => {}} />,
+      <App deps={deps} onAttach={() => {}} onExit={() => {}} />,
     );
     expect(lastFrame()).toMatch(/Triggers/);
   });
 
   it('shows the keybinding hint line', () => {
     const { lastFrame } = render(
-      <App deps={deps} onAttach={() => {}} onCreate={() => {}} onExit={() => {}} />,
+      <App deps={deps} onAttach={() => {}} onExit={() => {}} />,
     );
     expect(lastFrame()).toMatch(/attach/);
     expect(lastFrame()).toMatch(/done/);

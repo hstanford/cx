@@ -14,7 +14,7 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
       const purpose = positionals.join(' ').trim();
       if (!purpose) throw new Error('usage: cx new "<purpose>" [--dir .] [--slug x] [--name n]');
       const s = cmdNew({ purpose, dir: values.dir ?? process.cwd(), slug: values.slug, name: values.name }, deps);
-      return { output: `started "${s.slug}" (${s.sessionId})` };
+      return { output: `started "${s.name}" in the background — open it in the Claude app (claude.ai/code), or \`cx go ${s.slug}\` to attach here` };
     }
     case 'ls':
       return { output: cmdLs(deps) };

@@ -165,4 +165,13 @@ describe('cmdNew seed + attach', () => {
     cmdNew({ purpose: 'detached', dir: '/tmp', slug: 'det', attach: false }, { regPath, runner: r });
     expect(interactiveCalls).toBe(0);
   });
+  it('does NOT attach when attach is omitted (background by default)', () => {
+    let interactiveCalls = 0;
+    const r: Runner = {
+      capture: deps.runner.capture,
+      interactive: () => { interactiveCalls++; return 0; },
+    };
+    cmdNew({ purpose: 'background default', dir: '/tmp', slug: 'bgd' }, { regPath, runner: r });
+    expect(interactiveCalls).toBe(0);
+  });
 });

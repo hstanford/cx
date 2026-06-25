@@ -2,16 +2,15 @@ import React, { useState } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import TextInput from 'ink-text-input';
 import { useStreams } from './useStreams.js';
-import { cmdDone, cmdRm, type Deps } from '../commands.js';
+import { cmdNew, cmdDone, cmdRm, type Deps } from '../commands.js';
 
 type Props = {
   deps: Deps;
   onAttach: (slug: string) => void;
-  onCreate: (purpose: string) => void;
   onExit: () => void;
 };
 
-export function App({ deps, onAttach, onCreate, onExit }: Props): JSX.Element {
+export function App({ deps, onAttach, onExit }: Props): JSX.Element {
   const streams = useStreams(deps);
   const { exit } = useApp();
   const [cursor, setCursor] = useState(0);
@@ -41,8 +40,8 @@ export function App({ deps, onAttach, onCreate, onExit }: Props): JSX.Element {
           onChange={setDraft}
           onSubmit={(value) => {
             const purpose = value.trim();
+            if (purpose) cmdNew({ purpose, dir: process.cwd(), attach: false }, deps);
             setCreating(false);
-            if (purpose) { onCreate(purpose); exit(); }
           }}
         />
       </Box>

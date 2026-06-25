@@ -34,7 +34,7 @@ export function cmdNew(
   const command = shellJoin(buildNewInvocation({ sessionId, name, prompt: args.seed, mcpConfig }));
   newWindow(deps.runner, { slug, dir: args.dir, command });
   saveRegistry(deps.regPath, addStream(reg, stream));
-  if (args.attach !== false) attachWindow(deps.runner, slug);
+  if (args.attach === true) attachWindow(deps.runner, slug);
   return stream;
 }
 
