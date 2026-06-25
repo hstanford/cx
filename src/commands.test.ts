@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, listStreams, type Deps } from './commands.js';
 import { loadRegistry, getStream } from './registry.js';
 import { type Runner } from './tmux.js';
 
@@ -110,6 +110,15 @@ describe('cmdRm', () => {
     cmdNew({ purpose: 'bye', dir: '/tmp', slug: 'r' }, deps);
     cmdRm({ slug: 'r' }, deps);
     expect(getStream(loadRegistry(regPath), 'r')).toBeUndefined();
+  });
+});
+
+describe('listStreams', () => {
+  it('returns reconciled, sorted streams (running first)', () => {
+    cmdNew({ purpose: 'one', dir: '/tmp', slug: 'one', attach: false }, deps);
+    const streams = listStreams(deps);
+    expect(streams).toHaveLength(1);
+    expect(streams[0].slug).toBe('one');
   });
 });
 

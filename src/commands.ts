@@ -35,10 +35,14 @@ export function cmdNew(
   return stream;
 }
 
-export function cmdLs(deps: Deps): string {
+export function listStreams(deps: Deps): Stream[] {
   const reg = reconcile(loadRegistry(deps.regPath), deps.runner);
   saveRegistry(deps.regPath, reg);
-  return renderTable(sortStreams(reg.streams));
+  return sortStreams(reg.streams);
+}
+
+export function cmdLs(deps: Deps): string {
+  return renderTable(listStreams(deps));
 }
 
 export function cmdGo(args: { slug: string }, deps: Deps): void {
