@@ -10,7 +10,7 @@ export async function createCxHttpServer(deps: Deps): Promise<Server> {
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() });
   await mcp.connect(transport);
   return createServer((req, res) => {
-    if (req.method === 'POST' && req.url === '/mcp') {
+    if (req.url === '/mcp') {
       transport.handleRequest(req, res).catch(() => {
         if (!res.headersSent) res.writeHead(500).end();
       });
