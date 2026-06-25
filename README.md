@@ -54,6 +54,19 @@ stream seeded with a handoff brief) and `cx_list()`.
 cx does not edit your global Claude config. The daemon is stateless beyond the registry and
 disposable — kill it and re-run `cx listen` anytime.
 
+## Config
+
+Create `~/.cx/config.json` to pass extra flags to every `claude` invocation cx spawns or revives:
+
+```json
+{ "claudeArgs": ["--permission-mode", "bypassPermissions"] }
+```
+
+- `claudeArgs` is a plain array of strings — cx passes them through unchanged, no interpretation.
+- Flags are injected into every spawned and revived session.
+- The file is read fresh each time cx spawns or revives a session.
+- If the file is missing or malformed, cx silently proceeds with no extra flags.
+
 ## Follow-ups
 
 See `DESIGN.md` for a planned phone/Slack front-end over this same registry.

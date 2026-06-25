@@ -11,6 +11,7 @@ import { reconcile, isLive } from './liveness.js';
 import { renderTable } from './render.js';
 import { mcpConfigPath } from './mcp/config.js';
 import { extractRemoteUrl } from './remoteUrl.js';
+import { loadConfig } from './config.js';
 
 export type Deps = { regPath: string; runner: Runner };
 
@@ -32,7 +33,8 @@ export function cmdNew(
   };
 
   const mcpConfig = fs.existsSync(mcpConfigPath()) ? mcpConfigPath() : undefined;
-  const command = shellJoin(buildNewInvocation({ sessionId, name, prompt: args.seed, mcpConfig }));
+  const { claudeArgs } = loadConfig();
+  const command = shellJoin(buildNewInvocation({ sessionId, name, prompt: args.seed, mcpConfig, extraArgs: claudeArgs }));
   newWindow(deps.runner, { slug, dir: args.dir, command });
   saveRegistry(deps.regPath, addStream(reg, stream));
   if (args.attach === true) attachWindow(deps.runner, slug);
@@ -55,7 +57,7 @@ export function cmdGo(args: { slug: string }, deps: Deps): void {
   if (!stream) throw new Error(`no stream "${args.slug}"`);
 
   if (!isLive(deps.runner, stream)) {
-    const command = shellJoin(buildReviveInvocation({ sessionId: stream.sessionId }));
+    const command = shellJoin(buildReviveInvocation({ sessionId: stream.sessionId, extraArgs: loadConfig().claudeArgs }));
     newWindow(deps.runner, { slug: stream.slug, dir: stream.dir, command });
     saveRegistry(deps.regPath, updateStream(reg, stream.slug, {
       status: 'running', lastActiveAt: nowIso(),

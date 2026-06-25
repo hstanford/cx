@@ -28,4 +28,28 @@ describe('claude invocations', () => {
       '--mcp-config', '/h/.cx/mcp.json', 'go',
     ]);
   });
+  it('inserts extraArgs after --mcp-config and before the prompt', () => {
+    expect(buildNewInvocation({
+      sessionId: 'i', name: 'N', prompt: 'go', extraArgs: ['--permission-mode', 'bypassPermissions'],
+    })).toEqual([
+      'claude', '--session-id', 'i', '--remote-control', '--name', 'N',
+      '--permission-mode', 'bypassPermissions', 'go',
+    ]);
+  });
+  it('inserts extraArgs after --mcp-config when both are given', () => {
+    expect(buildNewInvocation({
+      sessionId: 'i', name: 'N', mcpConfig: '/p/mcp.json', prompt: 'go',
+      extraArgs: ['--permission-mode', 'bypassPermissions'],
+    })).toEqual([
+      'claude', '--session-id', 'i', '--remote-control', '--name', 'N',
+      '--mcp-config', '/p/mcp.json', '--permission-mode', 'bypassPermissions', 'go',
+    ]);
+  });
+  it('appends extraArgs to revive invocation', () => {
+    expect(buildReviveInvocation({
+      sessionId: 'uuid-1', extraArgs: ['--permission-mode', 'bypassPermissions'],
+    })).toEqual([
+      'claude', '--remote-control', '--resume', 'uuid-1', '--permission-mode', 'bypassPermissions',
+    ]);
+  });
 });

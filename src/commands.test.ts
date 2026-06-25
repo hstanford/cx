@@ -222,6 +222,41 @@ describe('cmdNew mcp wiring', () => {
   });
 });
 
+describe('claudeArgs passthrough from config', () => {
+  it('cmdNew injects configured flags into the new-window command', () => {
+    const prev = process.env.CX_HOME;
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cx-home-'));
+    process.env.CX_HOME = home;
+    try {
+      fs.writeFileSync(path.join(home, 'config.json'), JSON.stringify({ claudeArgs: ['--permission-mode', 'bypassPermissions'] }));
+      cmdNew({ purpose: 'flagged', dir: '/tmp', slug: 'fl', attach: false }, deps);
+      expect(newWindowCalls.at(-1)!.command).toContain('--permission-mode');
+      expect(newWindowCalls.at(-1)!.command).toContain('bypassPermissions');
+    } finally {
+      if (prev === undefined) delete process.env.CX_HOME; else process.env.CX_HOME = prev;
+    }
+  });
+
+  it('cmdGo revive injects configured flags into the resume command', () => {
+    const prev = process.env.CX_HOME;
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cx-home-'));
+    process.env.CX_HOME = home;
+    try {
+      fs.writeFileSync(path.join(home, 'config.json'), JSON.stringify({ claudeArgs: ['--permission-mode', 'bypassPermissions'] }));
+      cmdNew({ purpose: 'revivable', dir: '/tmp', slug: 'rv', attach: false }, deps);
+      cmdDone({ slug: 'rv' }, deps);
+      newWindowCalls = [];
+      cmdGo({ slug: 'rv' }, deps);
+      const call = newWindowCalls.at(-1)!;
+      expect(call.command).toContain('--resume');
+      expect(call.command).toContain('--permission-mode');
+      expect(call.command).toContain('bypassPermissions');
+    } finally {
+      if (prev === undefined) delete process.env.CX_HOME; else process.env.CX_HOME = prev;
+    }
+  });
+});
+
 describe('cmdNew seed + attach', () => {
   it('passes the seed as the claude initial prompt', () => {
     const s = cmdNew({ purpose: 'tangent', dir: '/tmp', slug: 'tg', seed: 'continue the tangent' }, deps);
