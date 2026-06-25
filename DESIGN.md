@@ -203,6 +203,28 @@ so a session that died outside `cx` shows as stopped rather than a stale green.
   → tool fires), the judgment-to-offer lives in agent instructions/a skill, not
   the tool; (3) spawned sessions inherit the MCP server, so spawning is
   recursive — bounded by consent.
+
+  **Shape: `cx listen` + the stateless-harness property.** The MCP server is a
+  single idempotent daemon started by `cx listen` — one HTTP MCP endpoint many
+  sessions point at (not per-session stdio), which is what makes "idempotent"
+  meaningful and gives every session one shared spawn surface. Idempotency =
+  bind-or-bail: claim the port/pidfile, exit 0 if the listener is already ours,
+  so it's safe to run from a shell profile / launchd repeatedly and it
+  self-heals. `cx listen` also manages the MCP *registration* so spawned
+  sessions inherit the `cx` server (enabling the recursion above).
+
+  This yields the architecture's nicest property: **the registry file is the
+  only durable state; the verbs and TUI are stateless functions over it; tmux
+  holds the sessions; and `cx listen` is the lone long-lived process — itself
+  stateless beyond the registry, hence disposable/restartable.** No bespoke
+  state-holding daemon of cx's own.
+
+  **Discipline to preserve it:** keep `cx listen` thin. Do NOT make it a
+  background watcher that reconciles liveness — that would make the daemon
+  authoritative about state and reintroduce exactly the statefulness this
+  design removes. Liveness stays lazy/on-read (as `ls`/TUI do today). The daemon
+  only serves tools (calling the same stateless `cmd*` functions) and manages
+  registration. The CLI/TUI never depend on `cx listen` — it is purely additive.
 - Token/context metering per stream.
 - Multi-machine registries.
 
