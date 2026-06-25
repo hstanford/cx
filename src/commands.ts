@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
-  loadRegistry, saveRegistry, addStream, sortStreams, getStream, updateStream, type Stream,
+  loadRegistry, saveRegistry, addStream, sortStreams, getStream, updateStream, removeStream, type Stream,
 } from './registry.js';
 import { slugify, uniqueSlug } from './slug.js';
 import { shellJoin } from './shell.js';
@@ -62,4 +62,26 @@ export function cmdDone(args: { slug: string }, deps: Deps): void {
   if (!stream) throw new Error(`no stream "${args.slug}"`);
   killWindow(deps.runner, args.slug);
   saveRegistry(deps.regPath, updateStream(reg, args.slug, { status: 'stopped' }));
+}
+
+export function cmdEdit(
+  args: { slug: string; purpose?: string; name?: string },
+  deps: Deps,
+): Stream {
+  const reg = loadRegistry(deps.regPath);
+  const stream = getStream(reg, args.slug);
+  if (!stream) throw new Error(`no stream "${args.slug}"`);
+  const patch: Partial<Stream> = {};
+  if (args.purpose !== undefined) patch.purpose = args.purpose;
+  if (args.name !== undefined) patch.name = args.name;
+  const next = updateStream(reg, args.slug, patch);
+  saveRegistry(deps.regPath, next);
+  return getStream(next, args.slug)!;
+}
+
+export function cmdRm(args: { slug: string }, deps: Deps): void {
+  const reg = loadRegistry(deps.regPath);
+  if (!getStream(reg, args.slug)) throw new Error(`no stream "${args.slug}"`);
+  killWindow(deps.runner, args.slug);
+  saveRegistry(deps.regPath, removeStream(reg, args.slug));
 }

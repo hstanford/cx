@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cmdNew, cmdLs, cmdGo, cmdDone, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, type Deps } from './commands.js';
 import { loadRegistry, getStream } from './registry.js';
 import { type Runner } from './tmux.js';
 
@@ -92,5 +92,23 @@ describe('cmdDone', () => {
     const s = getStream(loadRegistry(regPath), 'keep');
     expect(s).toBeDefined();
     expect(s?.status).toBe('stopped');
+  });
+});
+
+describe('cmdEdit', () => {
+  it('updates purpose and name', () => {
+    cmdNew({ purpose: 'old purpose', dir: '/tmp', slug: 'e' }, deps);
+    const s = cmdEdit({ slug: 'e', purpose: 'new purpose', name: 'Renamed' }, deps);
+    expect(s.purpose).toBe('new purpose');
+    expect(s.name).toBe('Renamed');
+    expect(getStream(loadRegistry(regPath), 'e')?.purpose).toBe('new purpose');
+  });
+});
+
+describe('cmdRm', () => {
+  it('removes the registry entry entirely', () => {
+    cmdNew({ purpose: 'bye', dir: '/tmp', slug: 'r' }, deps);
+    cmdRm({ slug: 'r' }, deps);
+    expect(getStream(loadRegistry(regPath), 'r')).toBeUndefined();
   });
 });
