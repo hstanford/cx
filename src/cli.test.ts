@@ -50,4 +50,30 @@ describe('runCli', () => {
     const res = runCli(['restart', '--all'], deps);
     expect(res.output).toBe('nothing to restart');
   });
+
+  it('archive then restore round-trip', () => {
+    runCli(['new', 'archivable', '--slug', 'arcv'], deps);
+    const archRes = runCli(['archive', 'arcv'], deps);
+    expect(archRes.output).toBe('archived "arcv"');
+    const restRes = runCli(['restore', 'arcv'], deps);
+    expect(restRes.output).toBe('restored "arcv"');
+  });
+
+  it('ls --archived shows archived, hides active', () => {
+    runCli(['new', 'active', '--slug', 'act'], deps);
+    runCli(['new', 'archived', '--slug', 'arcd'], deps);
+    runCli(['archive', 'arcd'], deps);
+    const res = runCli(['ls', '--archived'], deps);
+    expect(res.output).toMatch(/arcd/);
+    expect(res.output).not.toMatch(/act/);
+  });
+
+  it('ls default hides archived', () => {
+    runCli(['new', 'active', '--slug', 'act2'], deps);
+    runCli(['new', 'archived', '--slug', 'arcd2'], deps);
+    runCli(['archive', 'arcd2'], deps);
+    const res = runCli(['ls'], deps);
+    expect(res.output).toMatch(/act2/);
+    expect(res.output).not.toMatch(/arcd2/);
+  });
 });

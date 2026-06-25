@@ -12,6 +12,7 @@ export const StreamSchema = z.object({
   createdAt: z.string(),
   lastActiveAt: z.string(),
   remoteUrl: z.string().optional(),
+  archived: z.boolean().optional(),
 });
 export type Stream = z.infer<typeof StreamSchema>;
 

@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, cmdRestart, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, cmdRestart, cmdArchive, cmdRestore, type Deps } from './commands.js';
 
 export function runCli(argv: string[], deps: Deps): { output?: string; launchTui?: boolean } {
   const [cmd, ...rest] = argv;
@@ -16,8 +16,13 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
       const s = cmdNew({ purpose, dir: values.dir ?? process.cwd(), slug: values.slug, name: values.name }, deps);
       return { output: `started "${s.name}" in the background — open it in the Claude app (claude.ai/code), or \`cx go ${s.slug}\` to attach here` };
     }
-    case 'ls':
-      return { output: cmdLs(deps) };
+    case 'ls': {
+      const { values } = parseArgs({
+        args: rest, allowPositionals: false,
+        options: { archived: { type: 'boolean' }, all: { type: 'boolean' } },
+      });
+      return { output: cmdLs(deps, { archived: values.archived, all: values.all }) };
+    }
     case 'go': {
       const slug = requireSlug(rest, 'go');
       cmdGo({ slug }, deps);
@@ -37,6 +42,16 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
       if (!slug) throw new Error('usage: cx edit <slug> [--purpose ...] [--name ...]');
       const s = cmdEdit({ slug, purpose: values.purpose, name: values.name }, deps);
       return { output: `updated "${s.slug}"` };
+    }
+    case 'archive': {
+      const slug = requireSlug(rest, 'archive');
+      cmdArchive({ slug }, deps);
+      return { output: `archived "${slug}"` };
+    }
+    case 'restore': {
+      const slug = requireSlug(rest, 'restore');
+      cmdRestore({ slug }, deps);
+      return { output: `restored "${slug}"` };
     }
     case 'rm': {
       const slug = requireSlug(rest, 'rm');

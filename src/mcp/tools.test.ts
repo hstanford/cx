@@ -3,7 +3,7 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import { handleSpawn, handleList } from './tools.js';
-import { type Deps } from '../commands.js';
+import { cmdArchive, type Deps } from '../commands.js';
 import { loadRegistry } from '../registry.js';
 import { type Runner } from '../tmux.js';
 
@@ -39,5 +39,14 @@ describe('handleList', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toHaveProperty('purpose', 'one');
     expect(rows[0]).toHaveProperty('status');
+  });
+
+  it('excludes archived streams', () => {
+    handleSpawn({ purpose: 'visible', dir: '/tmp' }, deps);
+    const { slug } = handleSpawn({ purpose: 'archived', dir: '/tmp' }, deps);
+    cmdArchive({ slug }, deps);
+    const rows = handleList(deps);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveProperty('purpose', 'visible');
   });
 });

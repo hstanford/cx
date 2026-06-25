@@ -17,11 +17,15 @@ pnpm install && pnpm build && pnpm link --global
 ```
 cx                       # live TUI: see what's running, ⏎ to jump in
 cx new "<purpose>"       # start a named, remote-controlled session in tmux
-cx ls                    # list streams (running first)
+cx ls                    # list streams (running first; hides archived)
+cx ls --archived         # show only archived streams
+cx ls --all              # show all streams including archived
 cx go <slug>             # attach; revives a stopped one (context intact)
 cx done <slug>           # stop but keep — fearless close
+cx archive <slug>        # hide (soft-delete); restore + cx go brings it back
+cx restore <slug>        # un-archive a hidden stream
 cx edit <slug> --purpose "..."   # update the memory line
-cx rm <slug>             # delete from the registry
+cx rm <slug>             # hard delete from the registry (irreversible)
 ```
 
 ## How it works
@@ -30,6 +34,9 @@ cx rm <slug>             # delete from the registry
 - The registry is a JSON file at `~/.cx/registry.json` (override with `CX_HOME`).
   It is the only durable state — closing a session never touches it, so `cx go`
   brings the full conversation back by resuming the pinned session id.
+- Archiving a stream hides it from default views and stops it if live, but nothing
+  touches the Claude session file — `cx restore <slug>` then `cx go <slug>` picks
+  up exactly where you left off.
 - Liveness is derived from local ground truth (the tmux window + its process),
   never a stored flag — so `cx ls`/the TUI always tell the truth.
 - Every session is interactive `claude --remote-control` — **never** `-p`. Billing

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, cmdRestart, listStreams, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, cmdRestart, cmdArchive, cmdRestore, listStreams, type Deps } from './commands.js';
 import { loadRegistry, getStream } from './registry.js';
 import { type Runner } from './tmux.js';
 
@@ -397,5 +397,72 @@ describe('cmdRestart', () => {
 
   it('throws when neither slug nor --all given', () => {
     expect(() => cmdRestart({}, deps)).toThrow(/slug.*--all|--all.*slug/i);
+  });
+});
+
+describe('cmdArchive', () => {
+  it('kills a live window and sets archived:true + status:stopped', () => {
+    cmdNew({ purpose: 'to archive', dir: '/tmp', slug: 'arc' }, deps);
+    expect(getStream(loadRegistry(regPath), 'arc')?.status).toBe('running');
+    cmdArchive({ slug: 'arc' }, deps);
+    const s = getStream(loadRegistry(regPath), 'arc');
+    expect(s?.archived).toBe(true);
+    expect(s?.status).toBe('stopped');
+  });
+
+  it('archives a stopped stream (no killWindow needed)', () => {
+    cmdNew({ purpose: 'stopped arc', dir: '/tmp', slug: 'sarc' }, deps);
+    cmdDone({ slug: 'sarc' }, deps);
+    cmdArchive({ slug: 'sarc' }, deps);
+    const s = getStream(loadRegistry(regPath), 'sarc');
+    expect(s?.archived).toBe(true);
+    expect(s?.status).toBe('stopped');
+  });
+
+  it('throws on unknown slug', () => {
+    expect(() => cmdArchive({ slug: 'ghost' }, deps)).toThrow(/ghost/);
+  });
+});
+
+describe('cmdRestore', () => {
+  it('clears archived flag', () => {
+    cmdNew({ purpose: 'restore me', dir: '/tmp', slug: 'rst' }, deps);
+    cmdArchive({ slug: 'rst' }, deps);
+    expect(getStream(loadRegistry(regPath), 'rst')?.archived).toBe(true);
+    cmdRestore({ slug: 'rst' }, deps);
+    expect(getStream(loadRegistry(regPath), 'rst')?.archived).toBe(false);
+  });
+
+  it('throws on unknown slug', () => {
+    expect(() => cmdRestore({ slug: 'ghost' }, deps)).toThrow(/ghost/);
+  });
+});
+
+describe('cmdLs filtering', () => {
+  it('default hides archived streams', () => {
+    cmdNew({ purpose: 'visible', dir: '/tmp', slug: 'vis' }, deps);
+    cmdNew({ purpose: 'hidden', dir: '/tmp', slug: 'hid' }, deps);
+    cmdArchive({ slug: 'hid' }, deps);
+    const out = cmdLs(deps);
+    expect(out).toMatch(/vis/);
+    expect(out).not.toMatch(/hid/);
+  });
+
+  it('--archived shows only archived streams', () => {
+    cmdNew({ purpose: 'visible', dir: '/tmp', slug: 'vis2' }, deps);
+    cmdNew({ purpose: 'hidden', dir: '/tmp', slug: 'hid2' }, deps);
+    cmdArchive({ slug: 'hid2' }, deps);
+    const out = cmdLs(deps, { archived: true });
+    expect(out).not.toMatch(/vis2/);
+    expect(out).toMatch(/hid2/);
+  });
+
+  it('--all shows both archived and active streams', () => {
+    cmdNew({ purpose: 'visible', dir: '/tmp', slug: 'vis3' }, deps);
+    cmdNew({ purpose: 'hidden', dir: '/tmp', slug: 'hid3' }, deps);
+    cmdArchive({ slug: 'hid3' }, deps);
+    const out = cmdLs(deps, { all: true });
+    expect(out).toMatch(/vis3/);
+    expect(out).toMatch(/hid3/);
   });
 });

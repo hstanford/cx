@@ -14,7 +14,7 @@ export function handleSpawn(
 export function handleList(
   deps: Deps,
 ): Array<{ slug: string; name: string; purpose: string; status: string; dir: string }> {
-  return listStreams(deps).map(s => ({
+  return listStreams(deps).filter(s => !s.archived).map(s => ({
     slug: s.slug, name: s.name, purpose: s.purpose, status: s.status, dir: s.dir,
   }));
 }

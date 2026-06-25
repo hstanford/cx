@@ -47,8 +47,31 @@ export function listStreams(deps: Deps): Stream[] {
   return sortStreams(reg.streams);
 }
 
-export function cmdLs(deps: Deps): string {
-  return renderTable(listStreams(deps));
+export function cmdLs(deps: Deps, opts?: { archived?: boolean; all?: boolean }): string {
+  const streams = listStreams(deps);
+  let filtered: Stream[];
+  if (opts?.all) {
+    filtered = streams;
+  } else if (opts?.archived) {
+    filtered = streams.filter(s => s.archived === true);
+  } else {
+    filtered = streams.filter(s => !s.archived);
+  }
+  return renderTable(filtered);
+}
+
+export function cmdArchive(args: { slug: string }, deps: Deps): void {
+  const reg = loadRegistry(deps.regPath);
+  const stream = getStream(reg, args.slug);
+  if (!stream) throw new Error(`no stream "${args.slug}"`);
+  if (isLive(deps.runner, stream)) killWindow(deps.runner, args.slug);
+  saveRegistry(deps.regPath, updateStream(reg, args.slug, { archived: true, status: 'stopped' }));
+}
+
+export function cmdRestore(args: { slug: string }, deps: Deps): void {
+  const reg = loadRegistry(deps.regPath);
+  if (!getStream(reg, args.slug)) throw new Error(`no stream "${args.slug}"`);
+  saveRegistry(deps.regPath, updateStream(reg, args.slug, { archived: false }));
 }
 
 function reviveDetached(reg: Registry, stream: Stream, deps: Deps): Registry {
