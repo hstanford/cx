@@ -292,8 +292,6 @@ export type Stream = z.infer<typeof StreamSchema>;
 export const RegistrySchema = z.object({ streams: z.array(StreamSchema) });
 export type Registry = z.infer<typeof RegistrySchema>;
 
-const EMPTY: Registry = { streams: [] };
-
 export function loadRegistry(file: string): Registry {
   if (!fs.existsSync(file)) return { streams: [] };
   const raw = fs.readFileSync(file, 'utf8');
@@ -337,8 +335,6 @@ export function sortStreams(streams: Stream[]): Stream[] {
     (a, b) => rank(a) - rank(b) || b.lastActiveAt.localeCompare(a.lastActiveAt),
   );
 }
-
-void EMPTY;
 ```
 
 - [ ] **Step 5: Run test to verify it passes**
@@ -725,7 +721,7 @@ git commit -m "feat: liveness reconciler from tmux ground truth"
 - Produces:
   - `type Deps = { regPath: string; runner: Runner }`
   - `cmdNew(args: { purpose: string; dir: string; slug?: string; name?: string }, deps: Deps): Stream`
-  - `cmdLs(args: { all?: boolean }, deps: Deps): string`
+  - `cmdLs(deps: Deps): string`
   - `renderTable(streams: Stream[]): string`
 
 - [ ] **Step 1: Write the failing test — `src/render.test.ts`**
@@ -847,7 +843,7 @@ describe('cmdNew', () => {
 describe('cmdLs', () => {
   it('lists registered streams and reconciles liveness', () => {
     cmdNew({ purpose: 'one', dir: '/tmp' }, deps);
-    const out = cmdLs({}, deps);
+    const out = cmdLs(deps);
     expect(out).toMatch(/one/);
   });
 });
@@ -898,11 +894,10 @@ export function cmdNew(
   return stream;
 }
 
-export function cmdLs(args: { all?: boolean }, deps: Deps): string {
+export function cmdLs(deps: Deps): string {
   const reg = reconcile(loadRegistry(deps.regPath), deps.runner);
   saveRegistry(deps.regPath, reg);
-  const visible = args.all ? reg.streams : reg.streams;
-  return renderTable(sortStreams(visible));
+  return renderTable(sortStreams(reg.streams));
 }
 ```
 
@@ -1179,10 +1174,8 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
       const s = cmdNew({ purpose, dir: values.dir ?? process.cwd(), slug: values.slug, name: values.name }, deps);
       return { output: `started "${s.slug}" (${s.sessionId})` };
     }
-    case 'ls': {
-      const { values } = parseArgs({ args: rest, options: { all: { type: 'boolean' } } });
-      return { output: cmdLs({ all: values.all }, deps) };
-    }
+    case 'ls':
+      return { output: cmdLs(deps) };
     case 'go': {
       const slug = requireSlug(rest, 'go');
       cmdGo({ slug }, deps);
@@ -1355,8 +1348,15 @@ git commit -m "feat: TUI data hook (reconcile + poll)"
 **Interfaces:**
 - Consumes: `useStreams`, `readStreams`, `cmdGo`, `cmdDone`, `cmdNew`, `cmdRm`, `Deps`.
 - Produces:
-  - `App(props: { deps: Deps; onAttach: (slug: string) => void; onExit: () => void }): JSX.Element`
+  - `App(props: { deps: Deps; onAttach: (slug: string) => void; onCreate: (purpose: string) => void; onExit: () => void }): JSX.Element`
   - `launchTui(deps: Deps): Promise<void>`
+
+> **Why `onCreate` is deferred:** attaching to (or creating, which then attaches)
+> a tmux window hands the TTY to `tmux attach-session`. Doing that *while ink
+> still owns raw-mode stdin/stdout* corrupts both. So the TUI only **signals**
+> intent (`onAttach`/`onCreate`); `launchTui` performs the terminal-handoff
+> spawn after ink has unmounted. `done`/`remove` don't hand off the terminal
+> (they only run captured tmux/registry ops), so they stay inline.
 
 - [ ] **Step 1: Write the failing smoke test — `src/tui/App.test.tsx`**
 
@@ -1389,14 +1389,14 @@ describe('App', () => {
   it('lists existing streams by name', () => {
     cmdNew({ purpose: 'refresh triggers', dir: '/tmp', slug: 'trg', name: 'Triggers' }, deps);
     const { lastFrame } = render(
-      <App deps={deps} onAttach={() => {}} onExit={() => {}} />,
+      <App deps={deps} onAttach={() => {}} onCreate={() => {}} onExit={() => {}} />,
     );
     expect(lastFrame()).toMatch(/Triggers/);
   });
 
   it('shows the keybinding hint line', () => {
     const { lastFrame } = render(
-      <App deps={deps} onAttach={() => {}} onExit={() => {}} />,
+      <App deps={deps} onAttach={() => {}} onCreate={() => {}} onExit={() => {}} />,
     );
     expect(lastFrame()).toMatch(/attach/);
     expect(lastFrame()).toMatch(/done/);
@@ -1416,11 +1416,16 @@ import React, { useState } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import TextInput from 'ink-text-input';
 import { useStreams } from './useStreams.js';
-import { cmdNew, cmdDone, cmdRm, type Deps } from '../commands.js';
+import { cmdDone, cmdRm, type Deps } from '../commands.js';
 
-type Props = { deps: Deps; onAttach: (slug: string) => void; onExit: () => void };
+type Props = {
+  deps: Deps;
+  onAttach: (slug: string) => void;
+  onCreate: (purpose: string) => void;
+  onExit: () => void;
+};
 
-export function App({ deps, onAttach, onExit }: Props): JSX.Element {
+export function App({ deps, onAttach, onCreate, onExit }: Props): JSX.Element {
   const streams = useStreams(deps);
   const { exit } = useApp();
   const [cursor, setCursor] = useState(0);
@@ -1451,7 +1456,7 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
           onSubmit={(value) => {
             const purpose = value.trim();
             setCreating(false);
-            if (purpose) { cmdNew({ purpose, dir: process.cwd() }, deps); onExit(); exit(); }
+            if (purpose) { onCreate(purpose); exit(); }
           }}
         />
       </Box>
@@ -1485,19 +1490,22 @@ Expected: PASS.
 import React from 'react';
 import { render } from 'ink';
 import { App } from './App.js';
-import { cmdGo, type Deps } from '../commands.js';
+import { cmdGo, cmdNew, type Deps } from '../commands.js';
 
 export async function launchTui(deps: Deps): Promise<void> {
   let pendingAttach: string | null = null;
+  let pendingCreate: string | null = null;
   const app = render(
     React.createElement(App, {
       deps,
       onAttach: (slug: string) => { pendingAttach = slug; },
+      onCreate: (purpose: string) => { pendingCreate = purpose; },
       onExit: () => {},
     }),
   );
   await app.waitUntilExit();
-  if (pendingAttach) cmdGo({ slug: pendingAttach }, deps);
+  if (pendingCreate) cmdNew({ purpose: pendingCreate, dir: process.cwd() }, deps);
+  else if (pendingAttach) cmdGo({ slug: pendingAttach }, deps);
 }
 ```
 
