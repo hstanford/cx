@@ -15,7 +15,7 @@ pnpm install && pnpm build && pnpm link --global
 ## Use
 
 ```
-cx                       # live TUI: see what's running, ⏎ to jump in
+cx                       # live TUI: running streams shown in green ●, stopped in ○; ⏎ to jump in
 cx new "<purpose>"       # start a named, remote-controlled session in tmux
 cx ls                    # list streams (running first; hides archived)
 cx ls --archived         # show only archived streams
@@ -24,6 +24,7 @@ cx go <slug>             # attach; revives a stopped one (context intact)
 cx done <slug>           # stop but keep — fearless close
 cx archive <slug>        # hide (soft-delete); restore + cx go brings it back
 cx restore <slug>        # un-archive a hidden stream
+                         # TUI: press `a` to switch to a dedicated Archived page (x restores, a/esc returns)
 cx edit <slug> --purpose "..."   # update the memory line
 cx rm <slug>             # hard delete from the registry (irreversible)
 ```

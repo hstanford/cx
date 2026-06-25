@@ -18,11 +18,11 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
   const [cursor, setCursor] = useState(0);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState('');
-  const [showArchived, setShowArchived] = useState(false);
+  const [page, setPage] = useState<'active' | 'archived'>('active');
 
-  const streams = showArchived
-    ? allStreams
-    : allStreams.filter(s => !s.archived);
+  const streams = page === 'active'
+    ? allStreams.filter(s => !s.archived)
+    : allStreams.filter(s => s.archived);
 
   const clamp = (i: number) => Math.max(0, Math.min(streams.length - 1, i));
   const current = streams[clamp(cursor)] ?? undefined;
@@ -34,7 +34,8 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
     if (key.downArrow) setCursor(c => clamp(c + 1));
     if (key.return && current) { onAttach(current.slug); exit(); return; }
     if (input === 'n') { setDraft(''); setCreating(true); }
-    if (input === 'a') { setShowArchived(v => !v); }
+    if (input === 'a') { setPage(p => p === 'active' ? 'archived' : 'active'); setCursor(0); }
+    if (key.escape) { setPage('active'); setCursor(0); }
     if (input === 'g' && current) cmdOpen({ slug: current.slug }, deps);
     if (input === 'r' && current) cmdRestart({ slug: current.slug }, deps);
     if (input === 'd' && current) cmdDone({ slug: current.slug }, deps);
@@ -44,6 +45,7 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
       } else {
         cmdArchive({ slug: current.slug }, deps);
       }
+      setCursor(c => clamp(c));
     }
   });
 
@@ -64,18 +66,25 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
     );
   }
 
+  const hint = page === 'active'
+    ? '↑↓ move  ⏎ attach  g open  r restart  n new  d done  x archive  a archived  q quit'
+    : '↑↓ move  x restore  a/esc back  q quit';
+
   return (
     <Box flexDirection="column" height={terminalHeight}>
+      <Box marginBottom={1}>
+        <Text bold>cx — {page} ({streams.length})</Text>
+      </Box>
       <Box flexDirection="column" flexGrow={1}>
-        {streams.length === 0 && <Text dimColor>no streams yet — press n to start one</Text>}
+        {streams.length === 0 && <Text dimColor>{page === 'active' ? 'no streams yet — press n to start one' : 'no archived streams'}</Text>}
         {streams.map((s, i) => (
-          <Text key={s.slug} inverse={i === clamp(cursor)} dimColor={s.archived === true}>
-            {s.status === 'running' ? '●' : '○'} {s.slug.padEnd(14)} {s.name.padEnd(20)} {s.purpose}{s.archived ? ' (archived)' : ''}
+          <Text key={s.slug} inverse={i === clamp(cursor)}>
+            {s.status === 'running' ? <Text color="green">●</Text> : <Text dimColor>○</Text>} {s.slug.padEnd(14)} {s.name.padEnd(20)} {s.purpose}
           </Text>
         ))}
       </Box>
       <Box marginTop={1}>
-        <Text dimColor>↑↓ move  ⏎ attach  g open  r restart  n new  d done  x archive  a archived  q quit</Text>
+        <Text dimColor>{hint}</Text>
       </Box>
     </Box>
   );

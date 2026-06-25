@@ -5,7 +5,7 @@ import path from 'node:path';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { App } from './App.js';
-import { cmdNew, type Deps } from '../commands.js';
+import { cmdNew, cmdArchive, type Deps } from '../commands.js';
 import { type Runner } from '../tmux.js';
 
 const runner: Runner = {
@@ -37,5 +37,19 @@ describe('App', () => {
     );
     expect(lastFrame()).toMatch(/attach/);
     expect(lastFrame()).toMatch(/done/);
+  });
+
+  it('default view shows active streams and hides archived ones', () => {
+    cmdNew({ purpose: 'active stream', dir: '/tmp', slug: 'active-one', name: 'ActiveStream' }, deps);
+    cmdNew({ purpose: 'archived stream', dir: '/tmp', slug: 'archived-one', name: 'ArchivedStream' }, deps);
+    cmdArchive({ slug: 'archived-one' }, deps);
+
+    const { lastFrame } = render(
+      <App deps={deps} onAttach={() => {}} onExit={() => {}} />,
+    );
+    const frame = lastFrame();
+    expect(frame).toMatch(/ActiveStream/);
+    expect(frame).not.toMatch(/ArchivedStream/);
+    expect(frame).toMatch(/active/);
   });
 });
