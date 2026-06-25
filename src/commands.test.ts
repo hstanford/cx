@@ -122,6 +122,21 @@ describe('listStreams', () => {
   });
 });
 
+describe('cmdNew mcp wiring', () => {
+  it('adds --mcp-config when ~/.cx/mcp.json exists', () => {
+    const prev = process.env.CX_HOME;
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cx-home-'));
+    process.env.CX_HOME = home;
+    try {
+      fs.writeFileSync(path.join(home, 'mcp.json'), '{}');
+      cmdNew({ purpose: 'wired', dir: '/tmp', slug: 'wired', attach: false }, deps);
+      expect(newWindowCalls.at(-1)!.command).toContain('--mcp-config');
+    } finally {
+      if (prev === undefined) delete process.env.CX_HOME; else process.env.CX_HOME = prev;
+    }
+  });
+});
+
 describe('cmdNew seed + attach', () => {
   it('passes the seed as the claude initial prompt', () => {
     const s = cmdNew({ purpose: 'tangent', dir: '/tmp', slug: 'tg', seed: 'continue the tangent' }, deps);

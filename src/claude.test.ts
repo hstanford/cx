@@ -22,4 +22,10 @@ describe('claude invocations', () => {
       'claude', '--session-id', 'id1', '--remote-control', '--name', 'Trg',
     ]);
   });
+  it('inserts --mcp-config before the prompt when given', () => {
+    expect(buildNewInvocation({ sessionId: 'id1', name: 'Trg', mcpConfig: '/h/.cx/mcp.json', prompt: 'go' })).toEqual([
+      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Trg',
+      '--mcp-config', '/h/.cx/mcp.json', 'go',
+    ]);
+  });
 });

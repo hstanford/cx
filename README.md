@@ -35,6 +35,25 @@ cx rm <slug>             # delete from the registry
 - Every session is interactive `claude --remote-control` — **never** `-p`. Billing
   is identical to working in the terminal directly.
 
+## Agent dispatch (`cx listen`)
+
+`cx listen` runs a local MCP server (default `http://127.0.0.1:7591/mcp`, override `CX_PORT`)
+so a running Claude Code session can fork a tangent into its own stream — with your consent.
+
+    cx listen        # start the idempotent MCP daemon (safe to run repeatedly)
+
+Tools exposed: `cx_spawn({ purpose, dir?, seed? })` (creates a detached, remote-controlled
+stream seeded with a handoff brief) and `cx_list()`.
+
+- Sessions started by cx automatically get the `cx` tools (cx writes `~/.cx/mcp.json` and
+  launches spawned sessions with `--mcp-config ~/.cx/mcp.json`).
+- To give a session you started manually the same tools, add the server once:
+
+      claude mcp add --transport http cx http://127.0.0.1:7591/mcp
+
+cx does not edit your global Claude config. The daemon is stateless beyond the registry and
+disposable — kill it and re-run `cx listen` anytime.
+
 ## Follow-ups
 
 See `DESIGN.md` for planned additions: a phone/Slack front-end and an

@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import {
   loadRegistry, saveRegistry, addStream, sortStreams, getStream, updateStream, removeStream, type Stream,
@@ -8,6 +9,7 @@ import { buildNewInvocation, buildReviveInvocation } from './claude.js';
 import { newWindow, attachWindow, killWindow, type Runner } from './tmux.js';
 import { reconcile, isLive } from './liveness.js';
 import { renderTable } from './render.js';
+import { mcpConfigPath } from './mcp/config.js';
 
 export type Deps = { regPath: string; runner: Runner };
 
@@ -28,7 +30,8 @@ export function cmdNew(
     status: 'running', createdAt: nowIso(), lastActiveAt: nowIso(),
   };
 
-  const command = shellJoin(buildNewInvocation({ sessionId, name, prompt: args.seed }));
+  const mcpConfig = fs.existsSync(mcpConfigPath()) ? mcpConfigPath() : undefined;
+  const command = shellJoin(buildNewInvocation({ sessionId, name, prompt: args.seed, mcpConfig }));
   newWindow(deps.runner, { slug, dir: args.dir, command });
   saveRegistry(deps.regPath, addStream(reg, stream));
   if (args.attach !== false) attachWindow(deps.runner, slug);

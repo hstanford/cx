@@ -1,6 +1,9 @@
-export function buildNewInvocation(opts: { sessionId: string; name: string; prompt?: string }): string[] {
+export function buildNewInvocation(
+  opts: { sessionId: string; name: string; prompt?: string; mcpConfig?: string },
+): string[] {
   return [
     'claude', '--session-id', opts.sessionId, '--remote-control', '--name', opts.name,
+    ...(opts.mcpConfig ? ['--mcp-config', opts.mcpConfig] : []),
     ...(opts.prompt ? [opts.prompt] : []),
   ];
 }
