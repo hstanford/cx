@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import {
-  loadRegistry, saveRegistry, addStream, sortStreams, getStream, updateStream, removeStream, type Stream,
+  loadRegistry, saveRegistry, addStream, sortStreams, getStream, updateStream, removeStream, type Stream, type Registry,
 } from './registry.js';
 import { slugify, uniqueSlug } from './slug.js';
 import { shellJoin } from './shell.js';
@@ -51,19 +51,40 @@ export function cmdLs(deps: Deps): string {
   return renderTable(listStreams(deps));
 }
 
+function reviveDetached(reg: Registry, stream: Stream, deps: Deps): Registry {
+  const command = shellJoin(buildReviveInvocation({ sessionId: stream.sessionId, extraArgs: loadConfig().claudeArgs }));
+  newWindow(deps.runner, { slug: stream.slug, dir: stream.dir, command });
+  return updateStream(reg, stream.slug, { status: 'running', lastActiveAt: nowIso(), remoteUrl: undefined });
+}
+
 export function cmdGo(args: { slug: string }, deps: Deps): void {
   const reg = loadRegistry(deps.regPath);
   const stream = getStream(reg, args.slug);
   if (!stream) throw new Error(`no stream "${args.slug}"`);
 
   if (!isLive(deps.runner, stream)) {
-    const command = shellJoin(buildReviveInvocation({ sessionId: stream.sessionId, extraArgs: loadConfig().claudeArgs }));
-    newWindow(deps.runner, { slug: stream.slug, dir: stream.dir, command });
-    saveRegistry(deps.regPath, updateStream(reg, stream.slug, {
-      status: 'running', lastActiveAt: nowIso(),
-    }));
+    saveRegistry(deps.regPath, reviveDetached(reg, stream, deps));
   }
   attachWindow(deps.runner, args.slug);
+}
+
+export function cmdRestart(args: { slug?: string; all?: boolean }, deps: Deps): { restarted: string[] } {
+  let reg = loadRegistry(deps.regPath);
+  let targets: Stream[];
+  if (args.all) {
+    targets = reg.streams.filter(s => isLive(deps.runner, s));
+  } else {
+    if (!args.slug) throw new Error('restart needs a <slug> or --all');
+    const s = getStream(reg, args.slug);
+    if (!s) throw new Error(`no stream "${args.slug}"`);
+    targets = [s];
+  }
+  for (const stream of targets) {
+    if (isLive(deps.runner, stream)) killWindow(deps.runner, stream.slug);
+    reg = reviveDetached(reg, stream, deps);
+  }
+  saveRegistry(deps.regPath, reg);
+  return { restarted: targets.map(s => s.slug) };
 }
 
 export function cmdDone(args: { slug: string }, deps: Deps): void {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, listStreams, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, cmdRestart, listStreams, type Deps } from './commands.js';
 import { loadRegistry, getStream } from './registry.js';
 import { type Runner } from './tmux.js';
 
@@ -255,6 +255,16 @@ describe('claudeArgs passthrough from config', () => {
       if (prev === undefined) delete process.env.CX_HOME; else process.env.CX_HOME = prev;
     }
   });
+
+  it('cmdGo revive clears stale remoteUrl', () => {
+    cmdNew({ purpose: 'has-remote', dir: '/tmp', slug: 'hr', attach: false }, deps);
+    const reg = loadRegistry(regPath);
+    const patched = { streams: reg.streams.map(s => s.slug === 'hr' ? { ...s, remoteUrl: 'https://claude.ai/code/session_stale', status: 'stopped' as const } : s) };
+    fs.writeFileSync(regPath, JSON.stringify(patched, null, 2));
+    newWindowCalls = [];
+    cmdGo({ slug: 'hr' }, deps);
+    expect(getStream(loadRegistry(regPath), 'hr')?.remoteUrl).toBeUndefined();
+  });
 });
 
 describe('cmdNew seed + attach', () => {
@@ -281,5 +291,111 @@ describe('cmdNew seed + attach', () => {
     };
     cmdNew({ purpose: 'background default', dir: '/tmp', slug: 'bgd' }, { regPath, runner: r });
     expect(interactiveCalls).toBe(0);
+  });
+});
+
+describe('cmdRestart', () => {
+  function noAttachRunner(): Runner {
+    const killedSlugs = new Set<string>();
+    return {
+      capture(_cmd, args) {
+        if (args[0] === 'new-window') {
+          const slug = args[args.indexOf('-n') + 1];
+          const dir = args[args.indexOf('-c') + 1];
+          const command = args[args.length - 1];
+          newWindowCalls.push({ slug, dir, command });
+          killedSlugs.delete(slug);
+        }
+        if (args[0] === 'kill-window') {
+          const t = args[args.indexOf('-t') + 1];
+          const slug = t.split(':').pop()!;
+          killedSlugs.add(slug);
+        }
+        if (args[0] === 'list-windows') {
+          const live = newWindowCalls.map(c => c.slug).filter(s => !killedSlugs.has(s));
+          return { status: 0, stdout: live.join('\n') };
+        }
+        if (args[0] === 'display-message') return { status: 0, stdout: 'node' };
+        return { status: 0, stdout: '' };
+      },
+      interactive() { throw new Error('restart must never attach'); },
+    };
+  }
+
+  it('kills a live stream then background-revives it with --resume + sessionId', () => {
+    const r = noAttachRunner();
+    const localDeps: Deps = { regPath, runner: r };
+    const s = cmdNew({ purpose: 'restartable', dir: '/tmp', slug: 'rs' }, localDeps);
+    newWindowCalls = [];
+    const result = cmdRestart({ slug: 'rs' }, localDeps);
+    expect(result.restarted).toEqual(['rs']);
+    const call = newWindowCalls.at(-1)!;
+    expect(call.command).toContain('--resume');
+    expect(call.command).toContain(s.sessionId);
+    expect(getStream(loadRegistry(regPath), 'rs')?.status).toBe('running');
+  });
+
+  it('applies configured claudeArgs on restart', () => {
+    const prev = process.env.CX_HOME;
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cx-home-'));
+    process.env.CX_HOME = home;
+    try {
+      fs.writeFileSync(path.join(home, 'config.json'), JSON.stringify({ claudeArgs: ['--permission-mode', 'bypassPermissions'] }));
+      const r = noAttachRunner();
+      const localDeps: Deps = { regPath, runner: r };
+      cmdNew({ purpose: 'cfg-restart', dir: '/tmp', slug: 'cfr' }, localDeps);
+      newWindowCalls = [];
+      cmdRestart({ slug: 'cfr' }, localDeps);
+      const call = newWindowCalls.at(-1)!;
+      expect(call.command).toContain('--permission-mode');
+      expect(call.command).toContain('bypassPermissions');
+    } finally {
+      if (prev === undefined) delete process.env.CX_HOME; else process.env.CX_HOME = prev;
+    }
+  });
+
+  it('clears stale remoteUrl on restart', () => {
+    const r = noAttachRunner();
+    const localDeps: Deps = { regPath, runner: r };
+    cmdNew({ purpose: 'stale-url', dir: '/tmp', slug: 'su' }, localDeps);
+    const reg = loadRegistry(regPath);
+    const patched = { streams: reg.streams.map(s => s.slug === 'su' ? { ...s, remoteUrl: 'https://claude.ai/code/session_stale' } : s) };
+    fs.writeFileSync(regPath, JSON.stringify(patched, null, 2));
+    cmdRestart({ slug: 'su' }, localDeps);
+    expect(getStream(loadRegistry(regPath), 'su')?.remoteUrl).toBeUndefined();
+  });
+
+  it('--all restarts only live streams, skips stopped ones', () => {
+    const r = noAttachRunner();
+    const localDeps: Deps = { regPath, runner: r };
+    cmdNew({ purpose: 'live-one', dir: '/tmp', slug: 'live1' }, localDeps);
+    cmdNew({ purpose: 'live-two', dir: '/tmp', slug: 'live2' }, localDeps);
+    cmdDone({ slug: 'live2' }, localDeps);
+    const callsBefore = newWindowCalls.length;
+    const result = cmdRestart({ all: true }, localDeps);
+    expect(result.restarted).toEqual(['live1']);
+    const newCalls = newWindowCalls.slice(callsBefore);
+    expect(newCalls.map(c => c.slug)).toContain('live1');
+    expect(newCalls.map(c => c.slug)).not.toContain('live2');
+  });
+
+  it('restarts a stopped stream by slug (kill skipped, still revives)', () => {
+    const r = noAttachRunner();
+    const localDeps: Deps = { regPath, runner: r };
+    cmdNew({ purpose: 'stopped-restart', dir: '/tmp', slug: 'sr' }, localDeps);
+    cmdDone({ slug: 'sr' }, localDeps);
+    newWindowCalls = [];
+    const result = cmdRestart({ slug: 'sr' }, localDeps);
+    expect(result.restarted).toEqual(['sr']);
+    expect(newWindowCalls.at(-1)!.command).toContain('--resume');
+    expect(getStream(loadRegistry(regPath), 'sr')?.status).toBe('running');
+  });
+
+  it('throws on unknown slug', () => {
+    expect(() => cmdRestart({ slug: 'ghost' }, deps)).toThrow(/ghost/);
+  });
+
+  it('throws when neither slug nor --all given', () => {
+    expect(() => cmdRestart({}, deps)).toThrow(/slug.*--all|--all.*slug/i);
   });
 });

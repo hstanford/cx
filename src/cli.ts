@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, cmdRestart, type Deps } from './commands.js';
 
 export function runCli(argv: string[], deps: Deps): { output?: string; launchTui?: boolean } {
   const [cmd, ...rest] = argv;
@@ -49,6 +49,13 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
       return { output: r.opened === 'session'
         ? `opening "${slug}" in your browser`
         : `couldn't capture the session URL yet — opened claude.ai/code (find "${slug}" by name); try again once it's live` };
+    }
+    case 'restart': {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: { all: { type: 'boolean' } } });
+      const r = cmdRestart({ slug: positionals[0], all: values.all }, deps);
+      return { output: r.restarted.length === 0
+        ? 'nothing to restart'
+        : `restarted ${r.restarted.length}: ${r.restarted.join(', ')}` };
     }
     default:
       throw new Error(`unknown command: ${cmd}`);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Text, useInput, useApp, useStdout } from 'ink';
 import TextInput from 'ink-text-input';
 import { useStreams } from './useStreams.js';
-import { cmdNew, cmdDone, cmdRm, cmdOpen, type Deps } from '../commands.js';
+import { cmdNew, cmdDone, cmdRm, cmdOpen, cmdRestart, type Deps } from '../commands.js';
 
 type Props = {
   deps: Deps;
@@ -30,6 +30,7 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
     if (key.return && current) { onAttach(current.slug); exit(); return; }
     if (input === 'n') { setDraft(''); setCreating(true); }
     if (input === 'g' && current) cmdOpen({ slug: current.slug }, deps);
+    if (input === 'r' && current) cmdRestart({ slug: current.slug }, deps);
     if (input === 'd' && current) cmdDone({ slug: current.slug }, deps);
     if (input === 'x' && current) cmdRm({ slug: current.slug }, deps);
   });
@@ -62,7 +63,7 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
         ))}
       </Box>
       <Box marginTop={1}>
-        <Text dimColor>↑↓ move  ⏎ attach  g open  n new  d done  x remove  q quit</Text>
+        <Text dimColor>↑↓ move  ⏎ attach  g open  r restart  n new  d done  x remove  q quit</Text>
       </Box>
     </Box>
   );

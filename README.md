@@ -67,6 +67,20 @@ Create `~/.cx/config.json` to pass extra flags to every `claude` invocation cx s
 - The file is read fresh each time cx spawns or revives a session.
 - If the file is missing or malformed, cx silently proceeds with no extra flags.
 
+### Restart
+
+Config changes apply automatically to new sessions and to stopped sessions when next revived. To apply a config change to a session that is **currently running**, bounce it in the background:
+
+```
+cx restart <slug>     # re-launch one session with the current config
+cx restart --all      # bounce all live sessions (stopped ones are left alone)
+```
+
+The session's conversation is intact — restart uses `--resume` with the pinned session id, so no history is lost. There is no terminal attach; the session continues running in the background. The `r` key in the TUI does the same for the selected stream.
+
+> **Note:** if a turn is in progress when you restart, that turn is interrupted. Restart between turns for a clean transition.
+
+
 ## Follow-ups
 
 See `DESIGN.md` for a planned phone/Slack front-end over this same registry.

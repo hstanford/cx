@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { runCli } from './cli.js';
 import { type Deps } from './commands.js';
+import { loadRegistry } from './registry.js';
 import { type Runner } from './tmux.js';
 
 const noopRunner: Runner = {
@@ -34,5 +35,20 @@ describe('runCli', () => {
   });
   it('open with no slug throws a usage error', () => {
     expect(() => runCli(['open'], deps)).toThrow(/usage: cx open/i);
+  });
+
+  it('restart with no slug and no --all throws', () => {
+    expect(() => runCli(['restart'], deps)).toThrow(/slug.*--all|--all.*slug/i);
+  });
+
+  it('restart <slug> returns restarted output', () => {
+    runCli(['new', 'restart-test', '--slug', 'rtest'], deps);
+    const res = runCli(['restart', 'rtest'], deps);
+    expect(res.output).toMatch(/restarted 1: rtest/);
+  });
+
+  it('restart --all with no live streams returns "nothing to restart"', () => {
+    const res = runCli(['restart', '--all'], deps);
+    expect(res.output).toBe('nothing to restart');
   });
 });
