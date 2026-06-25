@@ -189,6 +189,20 @@ so a session that died outside `cx` shows as stopped rather than a stale green.
 - **Phone/Slack front-end** — reuse the `session-manager` pattern from
   `~/ask-henry/slack-bridge` over this same registry, driven by remote-control,
   **not `-p`**.
+- **MCP dispatch front-end (agent-initiated streams)** — expose a local MCP
+  server (front-end #4 over the same registry/command core) offering a
+  `cx_spawn(purpose, dir?, seed?)` tool = `cmdNew` over MCP, returning the new
+  stream's slug + remote-control URL. The point: let a *running* Claude Code
+  session that notices it's straddling two topics offer — **with conversational
+  consent** — to fork the tangent into its own **top-level** (peer, not
+  subagent) remote-controlled stream, seeded with a handoff brief, so the
+  original thread stays focused. This turns cx from passive session management
+  into active focus-keeping, attacking the "run to 1M because I won't
+  context-switch" pain at its source. Open questions: (1) seed-brief quality is
+  the whole game; (2) consent is conversational (agent proposes → user confirms
+  → tool fires), the judgment-to-offer lives in agent instructions/a skill, not
+  the tool; (3) spawned sessions inherit the MCP server, so spawning is
+  recursive — bounded by consent.
 - Token/context metering per stream.
 - Multi-machine registries.
 
