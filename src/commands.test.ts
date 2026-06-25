@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cmdNew, cmdLs, type Deps } from './commands.js';
-import { loadRegistry } from './registry.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, type Deps } from './commands.js';
+import { loadRegistry, getStream } from './registry.js';
 import { type Runner } from './tmux.js';
 
 let regPath: string;
@@ -63,5 +63,34 @@ describe('cmdLs', () => {
     cmdNew({ purpose: 'one', dir: '/tmp' }, deps);
     const out = cmdLs(deps);
     expect(out).toMatch(/one/);
+  });
+});
+
+describe('cmdGo', () => {
+  it('revives a stopped stream with a resume invocation and marks it running', () => {
+    const s = cmdNew({ purpose: 'revive me', dir: '/tmp', slug: 'rev' }, deps);
+    cmdDone({ slug: 'rev' }, deps);
+    expect(getStream(loadRegistry(regPath), 'rev')?.status).toBe('stopped');
+
+    newWindowCalls = [];
+    cmdGo({ slug: 'rev' }, deps);
+    const call = newWindowCalls.at(-1)!;
+    expect(call.command).toContain('--resume');
+    expect(call.command).toContain(s.sessionId);
+    expect(getStream(loadRegistry(regPath), 'rev')?.status).toBe('running');
+  });
+
+  it('throws on an unknown slug', () => {
+    expect(() => cmdGo({ slug: 'nope' }, deps)).toThrow(/nope/);
+  });
+});
+
+describe('cmdDone', () => {
+  it('keeps the registry entry but marks it stopped', () => {
+    cmdNew({ purpose: 'keep me', dir: '/tmp', slug: 'keep' }, deps);
+    cmdDone({ slug: 'keep' }, deps);
+    const s = getStream(loadRegistry(regPath), 'keep');
+    expect(s).toBeDefined();
+    expect(s?.status).toBe('stopped');
   });
 });
