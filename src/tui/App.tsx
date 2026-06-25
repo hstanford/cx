@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Text, useInput, useApp } from 'ink';
+import { Box, Text, useInput, useApp, useStdout } from 'ink';
 import TextInput from 'ink-text-input';
 import { useStreams } from './useStreams.js';
 import { cmdNew, cmdDone, cmdRm, cmdOpen, type Deps } from '../commands.js';
@@ -13,6 +13,8 @@ type Props = {
 export function App({ deps, onAttach, onExit }: Props): JSX.Element {
   const streams = useStreams(deps);
   const { exit } = useApp();
+  const { stdout } = useStdout();
+  const terminalHeight = stdout?.rows;
   const [cursor, setCursor] = useState(0);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState('');
@@ -50,13 +52,15 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
   }
 
   return (
-    <Box flexDirection="column">
-      {streams.length === 0 && <Text dimColor>no streams yet — press n to start one</Text>}
-      {streams.map((s, i) => (
-        <Text key={s.slug} inverse={i === clamp(cursor)}>
-          {s.status === 'running' ? '●' : '○'} {s.slug.padEnd(14)} {s.name.padEnd(20)} {s.purpose}
-        </Text>
-      ))}
+    <Box flexDirection="column" height={terminalHeight}>
+      <Box flexDirection="column" flexGrow={1}>
+        {streams.length === 0 && <Text dimColor>no streams yet — press n to start one</Text>}
+        {streams.map((s, i) => (
+          <Text key={s.slug} inverse={i === clamp(cursor)}>
+            {s.status === 'running' ? '●' : '○'} {s.slug.padEnd(14)} {s.name.padEnd(20)} {s.purpose}
+          </Text>
+        ))}
+      </Box>
       <Box marginTop={1}>
         <Text dimColor>↑↓ move  ⏎ attach  g open  n new  d done  x remove  q quit</Text>
       </Box>
