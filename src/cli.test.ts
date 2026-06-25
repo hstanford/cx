@@ -32,4 +32,7 @@ describe('runCli', () => {
   it('errors clearly on an unknown command', () => {
     expect(() => runCli(['frobnicate'], deps)).toThrow(/unknown command/i);
   });
+  it('open with no slug throws a usage error', () => {
+    expect(() => runCli(['open'], deps)).toThrow(/usage: cx open/i);
+  });
 });

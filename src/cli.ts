@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, type Deps } from './commands.js';
 
 export function runCli(argv: string[], deps: Deps): { output?: string; launchTui?: boolean } {
   const [cmd, ...rest] = argv;
@@ -42,6 +42,13 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
       const slug = requireSlug(rest, 'rm');
       cmdRm({ slug }, deps);
       return { output: `removed "${slug}"` };
+    }
+    case 'open': {
+      const slug = requireSlug(rest, 'open');
+      const r = cmdOpen({ slug }, deps);
+      return { output: r.opened === 'session'
+        ? `opening "${slug}" in your browser`
+        : `couldn't capture the session URL yet — opened claude.ai/code (find "${slug}" by name); try again once it's live` };
     }
     default:
       throw new Error(`unknown command: ${cmd}`);

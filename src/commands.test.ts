@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, listStreams, type Deps } from './commands.js';
+import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, listStreams, type Deps } from './commands.js';
 import { loadRegistry, getStream } from './registry.js';
 import { type Runner } from './tmux.js';
 
@@ -131,6 +131,79 @@ describe('listStreams', () => {
     const streams = listStreams(deps);
     expect(streams).toHaveLength(1);
     expect(streams[0].slug).toBe('one');
+  });
+});
+
+describe('cmdOpen', () => {
+  const REMOTE_URL = 'https://claude.ai/code/session_abc123';
+
+  function openRunner(paneText: string) {
+    const openCalls: string[] = [];
+    let capturePaneCalled = false;
+    const runner: Runner = {
+      capture(cmd, args) {
+        if (args[0] === 'new-window') {
+          const slug = args[args.indexOf('-n') + 1];
+          const dir = args[args.indexOf('-c') + 1];
+          const command = args[args.length - 1];
+          newWindowCalls.push({ slug, dir, command });
+          return { status: 0, stdout: '' };
+        }
+        if (args[0] === 'list-windows') return { status: 0, stdout: newWindowCalls.map(c => c.slug).join('\n') };
+        if (args[0] === 'display-message') return { status: 0, stdout: 'node' };
+        if (args[0] === 'capture-pane') { capturePaneCalled = true; return { status: 0, stdout: paneText }; }
+        if (cmd === 'open') { openCalls.push(args[0]); return { status: 0, stdout: '' }; }
+        return { status: 0, stdout: '' };
+      },
+      interactive() { return 0; },
+    };
+    return { runner, openCalls, getCapturePaneCalled: () => capturePaneCalled };
+  }
+
+  it('scrapes pane, opens the URL, persists remoteUrl when stream has none stored', () => {
+    const paneText = `Starting claude...\n${REMOTE_URL}\nmore output`;
+    const { runner, openCalls } = openRunner(paneText);
+    const localDeps: Deps = { regPath, runner };
+    cmdNew({ purpose: 'test', dir: '/tmp', slug: 'sc' }, localDeps);
+
+    const result = cmdOpen({ slug: 'sc' }, localDeps);
+
+    expect(result).toEqual({ opened: 'session', url: REMOTE_URL });
+    expect(openCalls).toEqual([REMOTE_URL]);
+    expect(getStream(loadRegistry(regPath), 'sc')?.remoteUrl).toBe(REMOTE_URL);
+  });
+
+  it('uses stored remoteUrl without scraping the pane', () => {
+    const { runner, openCalls, getCapturePaneCalled } = openRunner('no url here');
+    const localDeps: Deps = { regPath, runner };
+    cmdNew({ purpose: 'stored', dir: '/tmp', slug: 'st' }, localDeps);
+    // Patch the registry directly to pre-store a remoteUrl
+    const reg = loadRegistry(regPath);
+    const patched = { streams: reg.streams.map(s => s.slug === 'st' ? { ...s, remoteUrl: REMOTE_URL } : s) };
+    fs.writeFileSync(regPath, JSON.stringify(patched, null, 2));
+
+    const result = cmdOpen({ slug: 'st' }, localDeps);
+
+    expect(result).toEqual({ opened: 'session', url: REMOTE_URL });
+    expect(openCalls).toEqual([REMOTE_URL]);
+    expect(getCapturePaneCalled()).toBe(false);
+  });
+
+  it('falls back to claude.ai/code when no URL found in pane', () => {
+    const { runner, openCalls } = openRunner('no remote url here');
+    const localDeps: Deps = { regPath, runner };
+    cmdNew({ purpose: 'nope', dir: '/tmp', slug: 'np' }, localDeps);
+
+    const result = cmdOpen({ slug: 'np' }, localDeps);
+
+    expect(result).toEqual({ opened: 'list', url: 'https://claude.ai/code' });
+    expect(openCalls).toEqual(['https://claude.ai/code']);
+  });
+
+  it('throws on unknown slug', () => {
+    const { runner } = openRunner('');
+    const localDeps: Deps = { regPath, runner };
+    expect(() => cmdOpen({ slug: 'ghost' }, localDeps)).toThrow(/ghost/);
   });
 });
 

@@ -11,6 +11,7 @@ export const StreamSchema = z.object({
   status: z.enum(['running', 'stopped']),
   createdAt: z.string(),
   lastActiveAt: z.string(),
+  remoteUrl: z.string().optional(),
 });
 export type Stream = z.infer<typeof StreamSchema>;
 
