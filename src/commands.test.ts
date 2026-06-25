@@ -1,0 +1,67 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
+import { cmdNew, cmdLs, type Deps } from './commands.js';
+import { loadRegistry } from './registry.js';
+import { type Runner } from './tmux.js';
+
+let regPath: string;
+let newWindowCalls: { slug: string; dir: string; command: string }[];
+
+function recordingRunner(): Runner {
+  return {
+    capture(_cmd, args) {
+      if (args[0] === 'new-window') {
+        const slug = args[args.indexOf('-n') + 1];
+        const dir = args[args.indexOf('-c') + 1];
+        const command = args[args.length - 1];
+        newWindowCalls.push({ slug, dir, command });
+      }
+      if (args[0] === 'list-windows') {
+        return { status: 0, stdout: newWindowCalls.map(c => c.slug).join('\n') };
+      }
+      if (args[0] === 'display-message') return { status: 0, stdout: 'node' };
+      return { status: 0, stdout: '' };
+    },
+    interactive() { return 0; },
+  };
+}
+
+let deps: Deps;
+beforeEach(() => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cx-'));
+  regPath = path.join(dir, 'registry.json');
+  newWindowCalls = [];
+  deps = { regPath, runner: recordingRunner() };
+});
+
+describe('cmdNew', () => {
+  it('registers a running stream and opens a tmux window with the new invocation', () => {
+    const s = cmdNew({ purpose: 'refresh triggers', dir: '/tmp/proj' }, deps);
+    expect(s.status).toBe('running');
+    expect(s.purpose).toBe('refresh triggers');
+    expect(s.sessionId).toMatch(/[0-9a-f-]{36}/);
+    expect(loadRegistry(regPath).streams).toHaveLength(1);
+
+    const call = newWindowCalls[0];
+    expect(call.dir).toBe('/tmp/proj');
+    expect(call.command).toContain('--session-id');
+    expect(call.command).toContain(s.sessionId);
+    expect(call.command).toContain('--remote-control');
+  });
+
+  it('derives a unique slug from the name/purpose', () => {
+    cmdNew({ purpose: 'infra cleanup', dir: '/tmp', slug: 'infra' }, deps);
+    const s2 = cmdNew({ purpose: 'infra again', dir: '/tmp', slug: 'infra' }, deps);
+    expect(s2.slug).toBe('infra-2');
+  });
+});
+
+describe('cmdLs', () => {
+  it('lists registered streams and reconciles liveness', () => {
+    cmdNew({ purpose: 'one', dir: '/tmp' }, deps);
+    const out = cmdLs(deps);
+    expect(out).toMatch(/one/);
+  });
+});
