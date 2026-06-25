@@ -112,3 +112,21 @@ describe('cmdRm', () => {
     expect(getStream(loadRegistry(regPath), 'r')).toBeUndefined();
   });
 });
+
+describe('cmdNew seed + attach', () => {
+  it('passes the seed as the claude initial prompt', () => {
+    const s = cmdNew({ purpose: 'tangent', dir: '/tmp', slug: 'tg', seed: 'continue the tangent' }, deps);
+    const call = newWindowCalls.at(-1)!;
+    expect(call.command).toContain('continue the tangent');
+    expect(s.slug).toBe('tg');
+  });
+  it('does NOT attach when attach:false (no interactive call)', () => {
+    let interactiveCalls = 0;
+    const r: Runner = {
+      capture: deps.runner.capture,
+      interactive: () => { interactiveCalls++; return 0; },
+    };
+    cmdNew({ purpose: 'detached', dir: '/tmp', slug: 'det', attach: false }, { regPath, runner: r });
+    expect(interactiveCalls).toBe(0);
+  });
+});

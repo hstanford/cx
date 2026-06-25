@@ -12,4 +12,14 @@ describe('claude invocations', () => {
       'claude', '--remote-control', '--resume', 'uuid-1',
     ]);
   });
+  it('appends the seed prompt as the last positional', () => {
+    expect(buildNewInvocation({ sessionId: 'id1', name: 'Trg', prompt: 'do the thing' })).toEqual([
+      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Trg', 'do the thing',
+    ]);
+  });
+  it('omits the prompt when not given', () => {
+    expect(buildNewInvocation({ sessionId: 'id1', name: 'Trg' })).toEqual([
+      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Trg',
+    ]);
+  });
 });

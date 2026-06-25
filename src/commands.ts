@@ -14,7 +14,7 @@ export type Deps = { regPath: string; runner: Runner };
 const nowIso = () => new Date().toISOString();
 
 export function cmdNew(
-  args: { purpose: string; dir: string; slug?: string; name?: string },
+  args: { purpose: string; dir: string; slug?: string; name?: string; seed?: string; attach?: boolean },
   deps: Deps,
 ): Stream {
   const reg = loadRegistry(deps.regPath);
@@ -28,10 +28,10 @@ export function cmdNew(
     status: 'running', createdAt: nowIso(), lastActiveAt: nowIso(),
   };
 
-  const command = shellJoin(buildNewInvocation({ sessionId, name }));
+  const command = shellJoin(buildNewInvocation({ sessionId, name, prompt: args.seed }));
   newWindow(deps.runner, { slug, dir: args.dir, command });
   saveRegistry(deps.regPath, addStream(reg, stream));
-  attachWindow(deps.runner, slug);
+  if (args.attach !== false) attachWindow(deps.runner, slug);
   return stream;
 }
 
