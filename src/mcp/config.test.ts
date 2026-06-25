@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cxPort, mcpConfigPath, mcpUrl, writeMcpConfig } from './config.js';
+import { cxPort, mcpConfigPath, mcpUrl, writeMcpConfig, installHint } from './config.js';
 
 let home: string;
 let prevHome: string | undefined;
@@ -30,5 +30,10 @@ describe('mcp config', () => {
     writeMcpConfig(7591);
     const body = JSON.parse(fs.readFileSync(mcpConfigPath(), 'utf8'));
     expect(body).toEqual({ mcpServers: { cx: { type: 'http', url: 'http://127.0.0.1:7591/mcp' } } });
+  });
+  it('installHint contains the mcp add command and --mcp-config flag', () => {
+    const hint = installHint(7591);
+    expect(hint).toContain('claude mcp add --transport http cx http://127.0.0.1:7591/mcp');
+    expect(hint).toContain('--mcp-config');
   });
 });

@@ -15,6 +15,15 @@ export function mcpUrl(port: number): string {
   return `http://127.0.0.1:${port}/mcp`;
 }
 
+export function installHint(port: number): string {
+  return [
+    'Sessions started by cx get the cx tools automatically.',
+    'For a session you started yourself, wire it once:',
+    `    claude mcp add --transport http cx ${mcpUrl(port)}`,
+    `…or launch it with:  claude --mcp-config ${mcpConfigPath()}`,
+  ].join('\n');
+}
+
 export function writeMcpConfig(port: number): void {
   const file = mcpConfigPath();
   fs.mkdirSync(path.dirname(file), { recursive: true });
