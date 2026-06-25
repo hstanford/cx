@@ -21,7 +21,7 @@ export function cmdNew(
 ): Stream {
   const reg = loadRegistry(deps.regPath);
   const name = args.name ?? args.purpose.slice(0, 40);
-  const base = slugify(args.slug ?? name);
+  const base = slugify(args.slug ?? name) || 'stream';
   const slug = uniqueSlug(base, reg.streams.map(s => s.slug));
   const sessionId = randomUUID();
 

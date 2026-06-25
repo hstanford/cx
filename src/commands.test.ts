@@ -58,6 +58,18 @@ describe('cmdNew', () => {
   });
 });
 
+describe('cmdNew non-ASCII slug fallback', () => {
+  it('falls back to "stream" slug when purpose is all non-ASCII', () => {
+    const s = cmdNew({ purpose: '日本語', dir: '/tmp', attach: false }, deps);
+    expect(s.slug).toBe('stream');
+  });
+  it('produces a unique non-empty slug on a second all-non-ASCII call', () => {
+    cmdNew({ purpose: '日本語', dir: '/tmp', attach: false }, deps);
+    const s2 = cmdNew({ purpose: '日本語', dir: '/tmp', attach: false }, deps);
+    expect(s2.slug).toBe('stream-2');
+  });
+});
+
 describe('cmdLs', () => {
   it('lists registered streams and reconciles liveness', () => {
     cmdNew({ purpose: 'one', dir: '/tmp' }, deps);
