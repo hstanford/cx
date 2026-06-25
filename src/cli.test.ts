@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { runCli } from './cli.js';
 import { type Deps } from './commands.js';
-import { loadRegistry } from './registry.js';
 import { type Runner } from './tmux.js';
 
 const noopRunner: Runner = {
