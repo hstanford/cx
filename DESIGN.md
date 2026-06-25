@@ -35,9 +35,11 @@ These are load-bearing — they shaped every decision below.
    alive (confirmed via research). The only truth is local: does the tmux window
    exist and is `claude` still running in it.
 4. **Annotate Claude's native sessions; don't duplicate them.** Claude already
-   stores sessions as JSONL and resumes by name (`--name` / `--resume "<name>"`).
-   The registry is a thin index *on top* that adds purpose, status, and tmux
-   location, joined to Claude by session name.
+   stores sessions as JSONL keyed by a session UUID. On creation we pin that UUID
+   with `--session-id`, store it, and revive with `--resume <id>`. The registry
+   is a thin index *on top* that adds purpose, status, and tmux location, joined
+   to Claude by **session id** — so display names stay free-form and need not be
+   unique.
 5. **One registry, multiple front-ends.** A CLI and a TUI ship in v1; a
    phone/Slack front-end is a later addition over the *same* registry.
 6. **Quarantine the clutter.** All session windows live in one dedicated tmux
@@ -83,8 +85,9 @@ These are load-bearing — they shaped every decision below.
 2. **tmux driver** — creates/selects/kills windows in a dedicated tmux session
    named `cx`; queries window existence and the pane's running command.
 3. **claude launcher** — builds the interactive invocation in the stream's dir:
-   `claude --remote-control "<name>"` for new, with `--resume "<name>"` for a
-   stopped stream being revived.
+   for new, generate a UUID and run
+   `claude --session-id <uuid> --remote-control --name "<name>"`; to revive a
+   stopped stream, `claude --remote-control --resume <uuid>`.
 4. **Liveness reconciler** — for each stream computes
    `live = tmux window exists AND its pane is running claude`, and reconciles
    that against the stored `status` so the displayed state is always honest.
@@ -98,16 +101,18 @@ A stream is one unit of work I care about.
 | field         | meaning                                                            |
 |---------------|--------------------------------------------------------------------|
 | `slug`        | short unique handle for commands (`triggers`)                      |
-| `name`        | descriptive; passed verbatim as Claude `--name` / remote-control title |
+| `sessionId`   | Claude session UUID — pinned via `--session-id` at creation; **the join key** for `--resume` |
+| `name`        | descriptive; passed as Claude `--name` / remote-control title (free-form, need not be unique) |
 | `purpose`     | one line — **the memory** of what this stream is for               |
 | `dir`         | project working directory                                          |
 | `status`      | `running` \| `stopped` (reconciled against ground truth on read)   |
 | `createdAt`   | timestamp                                                          |
 | `lastActiveAt`| timestamp, updated on `go`/`new`                                   |
 
-`name` doubles as the join key into Claude's native `--resume "<name>"`, so names
-must be unique; `slug` is also unique and defaults to a slugified `name`.
-`branch` is derived from the dir's git state at display time, not stored.
+The join into Claude is the `sessionId`, not the name — so names are free-form
+and collisions are allowed. `slug` is the only field that must be unique (it's
+the command handle) and defaults to a slugified `name`. `branch` is derived from
+the dir's git state at display time, not stored.
 
 ## CLI verbs
 
@@ -117,7 +122,7 @@ cx new "<purpose>" [--dir .]        register a stream, open a tmux window runnin
               [--slug x] [--name n] claude --remote-control "<name>", attach
 cx ls [--all]                       list streams — running first, with status/dir/purpose
 cx go <slug>                        attach; if stopped, revive with
-                                    --remote-control --resume "<name>", then attach
+                                    --remote-control --resume <id>, then attach
 cx done <slug>                      stop: kill the window, mark stopped, KEEP the entry
 cx edit <slug> [--purpose ...] [--name ...]   update fields
 cx rm <slug>                        delete from the registry (rare; confirms)
@@ -148,7 +153,7 @@ so a session that died outside `cx` shows as stopped rather than a stale green.
 
 - **new** → write registry entry → create tmux window → launch claude → status `running` → attach.
 - **ls / TUI** → read registry → reconcile liveness → render.
-- **go** → if live, select the window; if stopped, re-launch with `--resume`, then select.
+- **go** → if live, select the window; if stopped, re-launch with `--resume <id>`, then select.
 - **done** → kill the window → status `stopped` → entry retained.
 
 ## Error handling
@@ -173,10 +178,11 @@ so a session that died outside `cx` shows as stopped rather than a stale green.
 
 ## To verify during implementation
 
-- That `claude --remote-control --resume "<name>"` compose in a single
+- That `--session-id <uuid>` can be pinned alongside `--remote-control --name` at
+  creation, and that `--remote-control --resume <uuid>` compose in a single
   invocation (so reviving a stopped stream gets both context and remote control
-  at once). Fallback if not: launch `--resume` then issue `/remote-control` via
-  tmux send-keys.
+  at once). Fallback if the compose fails: launch `--resume <uuid>` then issue
+  `/remote-control` via tmux send-keys.
 
 ## Out of scope (named follow-ups)
 
