@@ -20,7 +20,7 @@
 
 ---
 
-### Task M1: Seed + detached spawn (`buildNewInvocation` prompt, `cmdNew` seed/attach)
+### Task 1: Seed + detached spawn (`buildNewInvocation` prompt, `cmdNew` seed/attach)
 
 **Files:**
 - Modify: `src/claude.ts`, `src/claude.test.ts`, `src/commands.ts`, `src/commands.test.ts`
@@ -136,7 +136,7 @@ git add -A && git commit -m "feat: cmdNew seed (initial prompt) + detached spawn
 
 ---
 
-### Task M2: MCP tool handlers + shared `listStreams`
+### Task 2: MCP tool handlers + shared `listStreams`
 
 **Files:**
 - Modify: `src/commands.ts`, `src/commands.test.ts`
@@ -278,7 +278,7 @@ git add -A && git commit -m "feat: MCP tool handlers (spawn detached + list) + s
 
 ---
 
-### Task M3: MCP server, `cx listen` daemon, config file
+### Task 3: MCP server, `cx listen` daemon, config file
 
 **Files:**
 - Modify: `package.json` (add `@modelcontextprotocol/sdk`), `bin/cx.ts`
@@ -559,7 +559,7 @@ git add -A && git commit -m "feat: cx listen — idempotent HTTP MCP server (cx_
 
 ---
 
-### Task M4: Spawned-session wiring (`--mcp-config`) + docs
+### Task 4: Spawned-session wiring (`--mcp-config`) + docs
 
 **Files:**
 - Modify: `src/claude.ts`, `src/claude.test.ts`, `src/commands.ts`, `src/commands.test.ts`, `README.md`
