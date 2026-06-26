@@ -1,14 +1,30 @@
 # cx
 
-A control plane for many Claude Code sessions. One registry, a CLI, and a live TUI.
+**Run a whole fleet of Claude Code sessions at once — and never lose one.**
 
-Every session is launched already remote-controlled and named, you can see at a
-glance what's live and jump straight in, and closing a session is fearless —
-nothing is lost.
+cx is a control plane for the many Claude Code sessions you keep going in
+parallel. Each is launched already remote-controlled and named, so you can see at
+a glance what's live, jump straight into any of them, and close them without fear
+— nothing is ever lost. Instead of a pile of look-alike terminal tabs, you get a
+tidy list of named, resumable streams you can list, attach to, stop, and bring
+back exactly where you left off.
 
-Run several Claude Code sessions in parallel — one per task, branch, or repo —
-without juggling terminal tabs: each is a named, resumable stream you can list,
-attach, stop, and bring back exactly where you left off.
+## What it's great for
+
+- **Running many tasks in parallel.** One session per task, branch, or repo —
+  each in its own tmux window, addressable by a memorable name instead of a tab
+  number. `cx ls` and the live TUI show you what's running at a glance.
+- **Long investigations you don't want to lose.** Stop a session when you step
+  away and `cx go` straight back into the full conversation later. Closing is
+  fearless: the registry and Claude's own session file both survive it, so you
+  resume exactly where you left off.
+- **Staying out of one giant chat.** When a session notices it's straddling two
+  topics, it can fork the tangent into its own peer session over MCP — with your
+  consent (see [Agent dispatch](#agent-dispatch-cx-listen)). No more running a
+  single chat to the token limit just to avoid context-switching.
+- **Picking up from anywhere.** Sessions are remote-controlled, so you can carry
+  on from the Claude app on your phone or laptop; clear names make them easy to
+  find there.
 
 ## Requirements
 
@@ -107,10 +123,3 @@ cx restart --all      # bounce all live sessions (stopped ones are left alone)
 The session's conversation is intact — restart uses `--resume` with the pinned session id, so no history is lost. There is no terminal attach; the session continues running in the background. The `r` key in the TUI does the same for the selected stream.
 
 > **Note:** if a turn is in progress when you restart, that turn is interrupted. Restart between turns for a clean transition.
-
-
-## Follow-ups
-
-The agent-facing front-end is the MCP dispatch server (`cx listen`, see above) —
-drive cx from any existing Claude thread over MCP, no separate bridge needed. A
-dedicated phone/Slack front-end was considered and dropped for that reason.

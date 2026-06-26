@@ -42,8 +42,7 @@ These are load-bearing — they shaped every decision below.
    unique.
 5. **One registry, multiple front-ends.** A CLI and a TUI ship in v1; the MCP
    dispatch daemon (`cx listen`) is a third front-end over the *same* registry,
-   letting any existing Claude thread drive cx over MCP. A separate phone/Slack
-   bridge was considered and dropped — the MCP front-end already covers it.
+   letting any existing Claude thread drive cx over MCP.
 6. **Quarantine the clutter.** All session windows live in one dedicated tmux
    session, not scattered across my working tmux.
 
@@ -189,9 +188,8 @@ so a session that died outside `cx` shows as stopped rather than a stale green.
 ## Out of scope (named follow-ups)
 
 - **MCP dispatch front-end (agent-initiated streams)** — *shipped (`cx listen`).*
-  This is the agent-facing front-end, and it's why a separate phone/Slack bridge
-  was dropped: any existing Claude thread drives cx over MCP, so a bespoke remote
-  bridge would be cost without edge. It exposes a local MCP
+  This is the agent-facing front-end: any existing Claude thread drives cx over
+  MCP. It exposes a local MCP
   server (a third front-end over the same registry/command core) offering a
   `cx_spawn(purpose, dir?, seed?)` tool = `cmdNew` over MCP, returning the new
   stream's slug + remote-control URL. The point: let a *running* Claude Code

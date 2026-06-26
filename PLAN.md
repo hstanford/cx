@@ -1618,7 +1618,7 @@ git commit -m "docs: README; verify real-path flags + e2e"
 - Live TUI (see-what's-live, attach) → Tasks 10–11.
 - Error handling (corruption backup, missing session, stale entries, slug collisions) → Tasks 2, 4, 5, 7. **Known gap:** the spec's "warn on vanished `dir`" is *not* implemented — `cmdGo`/`cmdNew` let tmux surface the error instead. Add an explicit `fs.existsSync(dir)` guard if that proves annoying in use.
 - "To verify" flag composition → Task 12.
-- Out-of-scope (phone, metering, multi-machine) → intentionally absent.
+- Out-of-scope (metering, multi-machine) → intentionally absent.
 
 **Placeholder scan** — no TBD/TODO; every code step shows complete code; the one deliberately-deferred item (flag composition) is an explicit verify-with-fallback in Task 12, not a gap.
 
