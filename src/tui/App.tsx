@@ -79,7 +79,7 @@ export function App({ deps, onAttach, onExit }: Props): JSX.Element {
         {streams.length === 0 && <Text dimColor>{page === 'active' ? 'no streams yet — press n to start one' : 'no archived streams'}</Text>}
         {streams.map((s, i) => (
           <Text key={s.slug} inverse={i === clamp(cursor)}>
-            {s.status === 'running' ? <Text color="green">●</Text> : <Text dimColor>○</Text>} {s.slug.padEnd(14)} {s.name.padEnd(20)} {s.purpose}
+            {s.status === 'running' ? <Text color="green">●</Text> : <Text dimColor>○</Text>} {s.name}
           </Text>
         ))}
       </Box>
