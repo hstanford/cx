@@ -40,8 +40,10 @@ These are load-bearing — they shaped every decision below.
    is a thin index *on top* that adds purpose, status, and tmux location, joined
    to Claude by **session id** — so display names stay free-form and need not be
    unique.
-5. **One registry, multiple front-ends.** A CLI and a TUI ship in v1; a
-   phone/Slack front-end is a later addition over the *same* registry.
+5. **One registry, multiple front-ends.** A CLI and a TUI ship in v1; the MCP
+   dispatch daemon (`cx listen`) is a third front-end over the *same* registry,
+   letting any existing Claude thread drive cx over MCP. A separate phone/Slack
+   bridge was considered and dropped — the MCP front-end already covers it.
 6. **Quarantine the clutter.** All session windows live in one dedicated tmux
    session, not scattered across my working tmux.
 
@@ -56,12 +58,12 @@ These are load-bearing — they shaped every decision below.
   (could be parsed from JSONL later if it earns its keep).
 - **Headless `-p` anywhere** — see principle 1.
 
-## Architecture: one registry, two front-ends
+## Architecture: one registry, three front-ends
 
 ```
                  ┌─────────────────────────────┐
    cx CLI  ─────▶│                             │
-                 │   registry  ~/.cx/registry  │◀──── (future) phone/Slack bridge
+                 │   registry  ~/.cx/registry  │◀──── cx listen (MCP daemon)
    cx TUI  ─────▶│        .json                │
                  └──────────────┬──────────────┘
                                 │ reconciled against
@@ -186,11 +188,11 @@ so a session that died outside `cx` shows as stopped rather than a stale green.
 
 ## Out of scope (named follow-ups)
 
-- **Phone/Slack front-end** — reuse the `session-manager` pattern from
-  `~/ask-henry/slack-bridge` over this same registry, driven by remote-control,
-  **not `-p`**.
-- **MCP dispatch front-end (agent-initiated streams)** — expose a local MCP
-  server (front-end #4 over the same registry/command core) offering a
+- **MCP dispatch front-end (agent-initiated streams)** — *shipped (`cx listen`).*
+  This is the agent-facing front-end, and it's why a separate phone/Slack bridge
+  was dropped: any existing Claude thread drives cx over MCP, so a bespoke remote
+  bridge would be cost without edge. It exposes a local MCP
+  server (a third front-end over the same registry/command core) offering a
   `cx_spawn(purpose, dir?, seed?)` tool = `cmdNew` over MCP, returning the new
   stream's slug + remote-control URL. The point: let a *running* Claude Code
   session that notices it's straddling two topics offer — **with conversational
@@ -230,6 +232,5 @@ so a session that died outside `cx` shows as stopped rather than a stale green.
 
 ## Implementation notes (non-binding)
 
-- TypeScript/Node, for consistency with the slack-bridge and a shared registry
-  type later. TUI via `ink` is the likely choice but isn't load-bearing.
+- TypeScript/Node. TUI via `ink` is the likely choice but isn't load-bearing.
 - Code lives at `~/src/cx`; the registry lives at `~/.cx/registry.json`.

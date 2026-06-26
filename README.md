@@ -111,5 +111,6 @@ The session's conversation is intact — restart uses `--resume` with the pinned
 
 ## Follow-ups
 
-See `DESIGN.md` for a planned phone/Slack front-end over this same registry.
-(The agent-initiated MCP dispatch server, `cx listen`, is built — see above.)
+The agent-facing front-end is the MCP dispatch server (`cx listen`, see above) —
+drive cx from any existing Claude thread over MCP, no separate bridge needed. A
+dedicated phone/Slack front-end was considered and dropped for that reason.
