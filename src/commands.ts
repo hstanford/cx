@@ -42,8 +42,10 @@ export function cmdNew(
 }
 
 export function listStreams(deps: Deps): Stream[] {
+  // READ-ONLY (see readStreams in tui/useStreams.ts): reconcile for display only,
+  // never write — a load→reconcile→save here races a concurrent `cx new` and
+  // drops the just-added stream. Status is re-derived from tmux on every load.
   const reg = reconcile(loadRegistry(deps.regPath), deps.runner);
-  saveRegistry(deps.regPath, reg);
   return sortStreams(reg.streams);
 }
 
