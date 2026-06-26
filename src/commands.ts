@@ -70,10 +70,19 @@ export function cmdArchive(args: { slug: string }, deps: Deps): void {
   saveRegistry(deps.regPath, updateStream(reg, args.slug, { archived: true, status: 'stopped' }));
 }
 
-export function cmdRestore(args: { slug: string }, deps: Deps): void {
+export function cmdRestore(args: { slug: string }, deps: Deps): { revived: boolean } {
   const reg = loadRegistry(deps.regPath);
-  if (!getStream(reg, args.slug)) throw new Error(`no stream "${args.slug}"`);
-  saveRegistry(deps.regPath, updateStream(reg, args.slug, { archived: false }));
+  const stream = getStream(reg, args.slug);
+  if (!stream) throw new Error(`no stream "${args.slug}"`);
+  const unarchived = updateStream(reg, args.slug, { archived: false });
+  // Mirror kill-on-archive: archiving stops the session, so restoring brings it
+  // back to life — unless it's somehow already running.
+  if (isLive(deps.runner, stream)) {
+    saveRegistry(deps.regPath, unarchived);
+    return { revived: false };
+  }
+  saveRegistry(deps.regPath, reviveDetached(unarchived, stream, deps));
+  return { revived: true };
 }
 
 function reviveDetached(reg: Registry, stream: Stream, deps: Deps): Registry {

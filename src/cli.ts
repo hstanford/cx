@@ -15,7 +15,8 @@ const USAGE = `cx — a control plane for many Claude Code sessions
   cx open <slug>                       open the session in your browser
   cx restart <slug> | --all            re-launch with current config; history intact
   cx done <slug>                       stop but keep
-  cx archive <slug>  cx restore <slug> hide / un-hide a stream
+  cx archive <slug>                    hide a stream (stops it if live)
+  cx restore <slug>                    un-hide a stream and revive it (context intact)
   cx edit <slug> [--purpose ..] [--name ..]   update the label
   cx rm <slug>                         hard delete from the registry
   cx listen                            run the MCP dispatch daemon (cx_spawn / cx_list)
@@ -75,8 +76,8 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
     }
     case 'restore': {
       const slug = requireSlug(rest, 'restore');
-      cmdRestore({ slug }, deps);
-      return { output: `restored "${slug}"` };
+      const { revived } = cmdRestore({ slug }, deps);
+      return { output: revived ? `restored "${slug}" — back up and running` : `restored "${slug}"` };
     }
     case 'rm': {
       const slug = requireSlug(rest, 'rm');

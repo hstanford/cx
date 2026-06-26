@@ -433,6 +433,28 @@ describe('cmdRestore', () => {
     expect(getStream(loadRegistry(regPath), 'rst')?.archived).toBe(false);
   });
 
+  it('revives the session on restore, mirroring kill-on-archive', () => {
+    const s = cmdNew({ purpose: 'restore-revive', dir: '/tmp', slug: 'rrv' }, deps);
+    cmdArchive({ slug: 'rrv' }, deps);
+    newWindowCalls = []; // the archived window was killed — gone from tmux
+    const result = cmdRestore({ slug: 'rrv' }, deps);
+    expect(result.revived).toBe(true);
+    const call = newWindowCalls.at(-1)!;
+    expect(call.command).toContain('--resume');
+    expect(call.command).toContain(s.sessionId);
+    const st = getStream(loadRegistry(regPath), 'rrv');
+    expect(st?.archived).toBe(false);
+    expect(st?.status).toBe('running');
+  });
+
+  it('does not double-launch when the stream is somehow still live', () => {
+    cmdNew({ purpose: 'still live', dir: '/tmp', slug: 'sl' }, deps);
+    cmdArchive({ slug: 'sl' }, deps); // recordingRunner keeps it "live" (kill not modeled)
+    const result = cmdRestore({ slug: 'sl' }, deps);
+    expect(result.revived).toBe(false);
+    expect(getStream(loadRegistry(regPath), 'sl')?.archived).toBe(false);
+  });
+
   it('throws on unknown slug', () => {
     expect(() => cmdRestore({ slug: 'ghost' }, deps)).toThrow(/ghost/);
   });

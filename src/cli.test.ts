@@ -56,7 +56,7 @@ describe('runCli', () => {
     const archRes = runCli(['archive', 'arcv'], deps);
     expect(archRes.output).toBe('archived "arcv"');
     const restRes = runCli(['restore', 'arcv'], deps);
-    expect(restRes.output).toBe('restored "arcv"');
+    expect(restRes.output).toBe('restored "arcv" — back up and running');
   });
 
   it('ls --archived shows archived, hides active', () => {
