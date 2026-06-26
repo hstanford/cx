@@ -3,3 +3,8 @@ dist/
 .cx/
 *.log
 .superpowers/
+
+# internal planning docs — kept locally, not published
+DESIGN.md
+PLAN.md
+PLAN_MCP.md

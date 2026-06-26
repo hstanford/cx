@@ -24,11 +24,11 @@ beforeEach(() => {
 
 describe('App', () => {
   it('lists existing streams by name', () => {
-    cmdNew({ purpose: 'refresh triggers', dir: '/tmp', slug: 'trg', name: 'Triggers' }, deps);
+    cmdNew({ purpose: 'fix parser bug', dir: '/tmp', slug: 'prs', name: 'Parser' }, deps);
     const { lastFrame } = render(
       <App deps={deps} onAttach={() => {}} onExit={() => {}} />,
     );
-    expect(lastFrame()).toMatch(/Triggers/);
+    expect(lastFrame()).toMatch(/Parser/);
   });
 
   it('shows the keybinding hint line', () => {

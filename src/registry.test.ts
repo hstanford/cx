@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 const sample = (over: Partial<Stream> = {}): Stream => StreamSchema.parse({
-  slug: 'infra', sessionId: 'id-1', name: 'Infra', purpose: 'render env',
+  slug: 'infra', sessionId: 'id-1', name: 'Infra', purpose: 'env cleanup',
   dir: '/tmp/x', status: 'running',
   createdAt: '2026-06-25T00:00:00.000Z', lastActiveAt: '2026-06-25T00:00:00.000Z',
   ...over,

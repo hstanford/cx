@@ -3,7 +3,7 @@ import { renderTable } from './render.js';
 import { StreamSchema, type Stream } from './registry.js';
 
 const s = (over: Partial<Stream>): Stream => StreamSchema.parse({
-  slug: 'infra', sessionId: 'id', name: 'Infra', purpose: 'render env',
+  slug: 'infra', sessionId: 'id', name: 'Infra', purpose: 'env cleanup',
   dir: '/tmp', status: 'running', createdAt: 'x', lastActiveAt: 'x', ...over,
 });
 

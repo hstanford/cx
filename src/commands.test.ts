@@ -38,9 +38,9 @@ beforeEach(() => {
 
 describe('cmdNew', () => {
   it('registers a running stream and opens a tmux window with the new invocation', () => {
-    const s = cmdNew({ purpose: 'refresh triggers', dir: '/tmp/proj' }, deps);
+    const s = cmdNew({ purpose: 'fix parser bug', dir: '/tmp/proj' }, deps);
     expect(s.status).toBe('running');
-    expect(s.purpose).toBe('refresh triggers');
+    expect(s.purpose).toBe('fix parser bug');
     expect(s.sessionId).toMatch(/[0-9a-f-]{36}/);
     expect(loadRegistry(regPath).streams).toHaveLength(1);
 

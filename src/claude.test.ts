@@ -3,8 +3,8 @@ import { buildNewInvocation, buildReviveInvocation } from './claude.js';
 
 describe('claude invocations', () => {
   it('pins the session id, remote control and name on new', () => {
-    expect(buildNewInvocation({ sessionId: 'uuid-1', name: 'Triggers' })).toEqual([
-      'claude', '--session-id', 'uuid-1', '--remote-control', '--name', 'Triggers',
+    expect(buildNewInvocation({ sessionId: 'uuid-1', name: 'Parser' })).toEqual([
+      'claude', '--session-id', 'uuid-1', '--remote-control', '--name', 'Parser',
     ]);
   });
   it('revives with remote control + resume by id', () => {
@@ -13,18 +13,18 @@ describe('claude invocations', () => {
     ]);
   });
   it('appends the seed prompt as the last positional', () => {
-    expect(buildNewInvocation({ sessionId: 'id1', name: 'Trg', prompt: 'do the thing' })).toEqual([
-      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Trg', 'do the thing',
+    expect(buildNewInvocation({ sessionId: 'id1', name: 'Demo', prompt: 'do the thing' })).toEqual([
+      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Demo', 'do the thing',
     ]);
   });
   it('omits the prompt when not given', () => {
-    expect(buildNewInvocation({ sessionId: 'id1', name: 'Trg' })).toEqual([
-      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Trg',
+    expect(buildNewInvocation({ sessionId: 'id1', name: 'Demo' })).toEqual([
+      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Demo',
     ]);
   });
   it('inserts --mcp-config before the prompt when given', () => {
-    expect(buildNewInvocation({ sessionId: 'id1', name: 'Trg', mcpConfig: '/h/.cx/mcp.json', prompt: 'go' })).toEqual([
-      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Trg',
+    expect(buildNewInvocation({ sessionId: 'id1', name: 'Demo', mcpConfig: '/h/.cx/mcp.json', prompt: 'go' })).toEqual([
+      'claude', '--session-id', 'id1', '--remote-control', '--name', 'Demo',
       '--mcp-config', '/h/.cx/mcp.json', 'go',
     ]);
   });

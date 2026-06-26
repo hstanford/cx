@@ -25,9 +25,9 @@ describe('runCli', () => {
     expect(runCli([], deps)).toEqual({ launchTui: true });
   });
   it('new then ls round-trips through the CLI surface', () => {
-    runCli(['new', 'refresh triggers', '--slug', 'trg'], deps);
+    runCli(['new', 'fix parser bug', '--slug', 'prs'], deps);
     const res = runCli(['ls'], deps);
-    expect(res.output).toMatch(/trg/);
+    expect(res.output).toMatch(/prs/);
   });
   it('errors clearly on an unknown command', () => {
     expect(() => runCli(['frobnicate'], deps)).toThrow(/unknown command/i);

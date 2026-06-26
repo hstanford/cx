@@ -3,10 +3,10 @@ import { slugify, uniqueSlug } from './slug.js';
 
 describe('slugify', () => {
   it('lowercases and hyphenates', () => {
-    expect(slugify('Triggers Page Refresh')).toBe('triggers-page-refresh');
+    expect(slugify('Refactor Parser Module')).toBe('refactor-parser-module');
   });
   it('strips punctuation and collapses separators', () => {
-    expect(slugify('Self-serve: launch!!  now')).toBe('self-serve-launch-now');
+    expect(slugify('Hot-fix: parser!!  now')).toBe('hot-fix-parser-now');
   });
   it('truncates to a sane length', () => {
     expect(slugify('a'.repeat(60)).length).toBeLessThanOrEqual(40);
