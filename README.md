@@ -6,6 +6,19 @@ Every session is launched already remote-controlled and named, you can see at a
 glance what's live and jump straight in, and closing a session is fearless —
 nothing is lost.
 
+Run several Claude Code sessions in parallel — one per task, branch, or repo —
+without juggling terminal tabs: each is a named, resumable stream you can list,
+attach, stop, and bring back exactly where you left off.
+
+## Requirements
+
+- **[Claude Code](https://claude.com/claude-code)** CLI on your `PATH` and logged
+  in. cx launches `claude --remote-control`, so you need a version that supports
+  that flag.
+- **tmux** — every session runs in a window of a dedicated `cx` tmux session,
+  kept separate from your own tmux.
+- **Node 18+** and **pnpm** — to build and link the CLI.
+
 ## Install
 
 ```
@@ -21,13 +34,20 @@ cx ls                    # list streams (running first; hides archived)
 cx ls --archived         # show only archived streams
 cx ls --all              # show all streams including archived
 cx go <slug>             # attach; revives a stopped one (context intact)
+cx open <slug>           # open the session in your browser (claude.ai/code)
 cx done <slug>           # stop but keep — fearless close
+cx restart <slug>        # re-launch with current config (--all bounces every live one); history intact
 cx archive <slug>        # hide (soft-delete); restore + cx go brings it back
 cx restore <slug>        # un-archive a hidden stream
                          # TUI: press `a` to switch to a dedicated Archived page (x restores, a/esc returns)
 cx edit <slug> --purpose "..."   # update the memory line
 cx rm <slug>             # hard delete from the registry (irreversible)
 ```
+
+### TUI keys
+
+`↑`/`↓` move · `⏎` attach · `n` new · `g` open in browser · `r` restart ·
+`d` stop · `x` archive / restore · `a` toggle the archived page · `q` quit
 
 ## How it works
 
