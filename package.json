@@ -2,6 +2,7 @@
   "name": "cx",
   "version": "0.1.0",
   "description": "Control plane for many Claude Code sessions",
+  "license": "MIT",
   "type": "module",
   "bin": { "cx": "dist/bin/cx.js" },
   "scripts": {
