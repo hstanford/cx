@@ -1,20 +1,45 @@
+import fs from 'node:fs';
 import { parseArgs } from 'node:util';
 import { cmdNew, cmdLs, cmdGo, cmdDone, cmdEdit, cmdRm, cmdOpen, cmdRestart, cmdArchive, cmdRestore, type Deps } from './commands.js';
+
+const USAGE = `cx — a control plane for many Claude Code sessions
+
+  cx                                   live TUI (↑↓ move · ⏎ attach · n new · g open · r restart · d stop · x archive · q quit)
+  cx new "<purpose>" [opts]            start a named, remote-controlled session
+      --prompt "<text>"                  send an initial message to the session
+      --prompt-file <path>               read the initial message from a file
+      --dir <path>                       working directory (default: current)
+      --slug <slug>  --name "<name>"     override the generated slug / display name
+  cx ls [--archived | --all]           list streams (running first; archived hidden by default)
+  cx go <slug>                         attach; revives a stopped one (context intact)
+  cx open <slug>                       open the session in your browser
+  cx restart <slug> | --all            re-launch with current config; history intact
+  cx done <slug>                       stop but keep
+  cx archive <slug>  cx restore <slug> hide / un-hide a stream
+  cx edit <slug> [--purpose ..] [--name ..]   update the label
+  cx rm <slug>                         hard delete from the registry
+  cx listen                            run the MCP dispatch daemon (cx_spawn / cx_list)
+  cx help                              show this help`;
 
 export function runCli(argv: string[], deps: Deps): { output?: string; launchTui?: boolean } {
   const [cmd, ...rest] = argv;
   if (!cmd) return { launchTui: true };
+  if (cmd === 'help' || cmd === '--help' || cmd === '-h') return { output: USAGE };
 
   switch (cmd) {
     case 'new': {
       const { values, positionals } = parseArgs({
         args: rest, allowPositionals: true,
-        options: { dir: { type: 'string' }, slug: { type: 'string' }, name: { type: 'string' } },
+        options: {
+          dir: { type: 'string' }, slug: { type: 'string' }, name: { type: 'string' },
+          prompt: { type: 'string' }, 'prompt-file': { type: 'string' },
+        },
       });
       const purpose = positionals.join(' ').trim();
-      if (!purpose) throw new Error('usage: cx new "<purpose>" [--dir .] [--slug x] [--name n]');
-      const s = cmdNew({ purpose, dir: values.dir ?? process.cwd(), slug: values.slug, name: values.name }, deps);
-      return { output: `started "${s.name}" in the background — open it in the Claude app (claude.ai/code), or \`cx go ${s.slug}\` to attach here` };
+      if (!purpose) throw new Error('usage: cx new "<purpose>" [--prompt "<text>" | --prompt-file <path>] [--dir .] [--slug x] [--name n]');
+      const seed = values['prompt-file'] ? fs.readFileSync(values['prompt-file'], 'utf8') : values.prompt;
+      const s = cmdNew({ purpose, dir: values.dir ?? process.cwd(), slug: values.slug, name: values.name, seed }, deps);
+      return { output: `started "${s.name}"${seed ? ' with an initial prompt' : ''} in the background — open it in the Claude app (claude.ai/code), or \`cx go ${s.slug}\` to attach here` };
     }
     case 'ls': {
       const { values } = parseArgs({
@@ -73,7 +98,7 @@ export function runCli(argv: string[], deps: Deps): { output?: string; launchTui
         : `restarted ${r.restarted.length}: ${r.restarted.join(', ')}` };
     }
     default:
-      throw new Error(`unknown command: ${cmd}`);
+      throw new Error(`unknown command: ${cmd}\n\n${USAGE}`);
   }
 }
 
