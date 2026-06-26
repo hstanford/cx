@@ -9,6 +9,10 @@ export function buildNewInvocation(
   ];
 }
 
-export function buildReviveInvocation(opts: { sessionId: string; extraArgs?: string[] }): string[] {
-  return ['claude', '--remote-control', '--resume', opts.sessionId, ...(opts.extraArgs ?? [])];
+export function buildReviveInvocation(opts: { sessionId: string; mcpConfig?: string; extraArgs?: string[] }): string[] {
+  return [
+    'claude', '--remote-control', '--resume', opts.sessionId,
+    ...(opts.mcpConfig ? ['--mcp-config', opts.mcpConfig] : []),
+    ...(opts.extraArgs ?? []),
+  ];
 }

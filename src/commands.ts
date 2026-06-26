@@ -77,7 +77,8 @@ export function cmdRestore(args: { slug: string }, deps: Deps): void {
 }
 
 function reviveDetached(reg: Registry, stream: Stream, deps: Deps): Registry {
-  const command = shellJoin(buildReviveInvocation({ sessionId: stream.sessionId, extraArgs: loadConfig().claudeArgs }));
+  const mcpConfig = fs.existsSync(mcpConfigPath()) ? mcpConfigPath() : undefined;
+  const command = shellJoin(buildReviveInvocation({ sessionId: stream.sessionId, mcpConfig, extraArgs: loadConfig().claudeArgs }));
   newWindow(deps.runner, { slug: stream.slug, dir: stream.dir, command });
   return updateStream(reg, stream.slug, { status: 'running', lastActiveAt: nowIso(), remoteUrl: undefined });
 }
