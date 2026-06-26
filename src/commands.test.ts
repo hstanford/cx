@@ -19,7 +19,7 @@ function recordingRunner(): Runner {
         newWindowCalls.push({ slug, dir, command });
       }
       if (args[0] === 'list-windows') {
-        return { status: 0, stdout: newWindowCalls.map(c => c.slug).join('\n') };
+        return { status: 0, stdout: newWindowCalls.map(c => `${c.slug}\tnode`).join('\n') };
       }
       if (args[0] === 'display-message') return { status: 0, stdout: 'node' };
       return { status: 0, stdout: '' };
@@ -149,7 +149,7 @@ describe('cmdOpen', () => {
           newWindowCalls.push({ slug, dir, command });
           return { status: 0, stdout: '' };
         }
-        if (args[0] === 'list-windows') return { status: 0, stdout: newWindowCalls.map(c => c.slug).join('\n') };
+        if (args[0] === 'list-windows') return { status: 0, stdout: newWindowCalls.map(c => `${c.slug}\tnode`).join('\n') };
         if (args[0] === 'display-message') return { status: 0, stdout: 'node' };
         if (args[0] === 'capture-pane') { capturePaneCalled = true; return { status: 0, stdout: paneText }; }
         if (cmd === 'open') { openCalls.push(args[0]); return { status: 0, stdout: '' }; }
@@ -313,7 +313,7 @@ describe('cmdRestart', () => {
         }
         if (args[0] === 'list-windows') {
           const live = newWindowCalls.map(c => c.slug).filter(s => !killedSlugs.has(s));
-          return { status: 0, stdout: live.join('\n') };
+          return { status: 0, stdout: live.map(s => `${s}\tnode`).join('\n') };
         }
         if (args[0] === 'display-message') return { status: 0, stdout: 'node' };
         return { status: 0, stdout: '' };

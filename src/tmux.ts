@@ -40,6 +40,21 @@ export function paneCommand(r: Runner, slug: string): string | null {
   return cmd === '' ? null : cmd;
 }
 
+// Liveness for EVERY window in one tmux call — `reconcile` checks the whole
+// registry each poll, so this replaces its 2×N windowExists+paneCommand spawns
+// with a single batched query. Returns window_name → active pane command.
+export function liveWindows(r: Runner): Map<string, string> {
+  const out = r.capture('tmux', ['list-windows', '-t', SESSION, '-F', '#{window_name}\t#{pane_current_command}']);
+  const map = new Map<string, string>();
+  if (out.status !== 0) return map;
+  for (const line of out.stdout.split('\n')) {
+    const tab = line.indexOf('\t');
+    if (tab === -1) continue;
+    map.set(line.slice(0, tab), line.slice(tab + 1).trim());
+  }
+  return map;
+}
+
 export function newWindow(r: Runner, opts: { slug: string; dir: string; command: string }): void {
   ensureSession(r);
   r.capture('tmux', [

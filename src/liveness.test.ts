@@ -11,8 +11,8 @@ const stream = (over: Partial<Stream> = {}): Stream => StreamSchema.parse({
 function runnerWith(state: { exists: boolean; pane: string }): Runner {
   return {
     capture(_cmd, args) {
-      if (args[0] === 'list-windows') return { status: 0, stdout: state.exists ? 'infra' : '' };
-      if (args[0] === 'display-message') return { status: 0, stdout: state.pane };
+      // liveWindows uses one batched `list-windows -F '#{window_name}\t#{pane_current_command}'`.
+      if (args[0] === 'list-windows') return { status: 0, stdout: state.exists ? `infra\t${state.pane}` : '' };
       return { status: 0, stdout: '' };
     },
     interactive() { return 0; },
